@@ -24,6 +24,29 @@ Creates an arrow that can be dragged with the mouse and rotated with keyboard ar
 Throws some confetti.
 
 
+## fetch-json.js
+
+Creates a global function `fetchJson` with the following API:
+
+```ts
+interface Extras extends FetchOptions {
+  noFail?: boolean;  // Do not throw if response.ok is false
+}
+
+interface Result {
+  ok: boolean;
+  status: number;
+  isJson: boolean;  // is the response body JSON?
+  body: any;  // will be parsed as JSON if possible
+}
+
+// Thrown if !response.ok && !extras.noFail
+type RequestFailed = Error & Result;
+
+fetchJson(method: string, url: string, reqBody?: any, extras?: Extras): Promise<Result>;
+```
+
+
 ## identify-duplicate-ids.js
 
 Adds a red border to all elements with duplicate IDs
