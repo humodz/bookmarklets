@@ -8,17 +8,29 @@
   --code: #f06292;
   --preformatted: #ccc;
   --disabled: #111;
-  }
+}
 
-  img, video {
-    opacity: 0.8;
-  }
+img, video {
+  opacity: 0.8;
+}
 
-  [role=button] {
-    text-align: center;
-    text-decoration: none;
-  }
+[role=button] {
+  text-align: center;
+  text-decoration: none;
+}
 
-  [role=button]:visited {
-    color: var(--bg);
-  }
+[role=button]:visited {
+  color: var(--bg);
+}
+
+.icon {
+    vertical-align: sub;
+    padding-right: 0.25rem;
+    display: inline-block;
+    width: 1.4em;
+    height: 1.3em;
+    margin-right: 0.2rem;
+    stroke-width: 0;
+    stroke: currentColor;
+    fill: currentColor;
+}
