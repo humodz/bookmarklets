@@ -20,8 +20,14 @@
 	</header>
 
 	<main>
+		<button
+			style="position: fixed; bottom: -0.75rem; right: 10%"
+			onclick="window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })"
+		>
+			Back to Top
+		</button>
 
-		<details>
+		<details open>
 			<summary>Index</summary>
 			<p>Drag these to your bookmarks toolbar</p>
 			<ul id="index-list"></ul>
@@ -93,13 +99,27 @@
 
 	</main>
 
+	<footer></footer>
+
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/minify.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/utils.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/ast.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/parse.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/transform.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/scope.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/output.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/compress.js"></script>
+	<script src="https://unpkg.com/uglify-js@3.17.0/lib/propmangle.js"></script>
+
 	<script>
 		const indexList = document.querySelector('#index-list');
 
 		document.querySelectorAll('a[data-src]').forEach(async anchor => {
 			const src = anchor.getAttribute('data-src');
 			const script = await fetch(src).then(res => res.text());
-			anchor.href = script;
+			const minified = minify(script).code;
+			// anchor.href = script;
+			anchor.href = `javascript:(()=>{ ${minified} })()`;
 
 			const listItem = document.createElement('li');
 			listItem.append(anchor.cloneNode(true));
