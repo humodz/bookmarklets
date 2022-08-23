@@ -186,13 +186,13 @@ javascript:
 				return {
 					title: titleElem.textContent,
 					href: titleElem.href,
-					approved: !!element.querySelector('[data-testid=approval-solid-icon]'),
-					lastUpdated: element.querySelector('.merge_request_updated_ago')?.textContent,
+					approved: !!$('[data-testid=approval-solid-icon]', element),
+					lastUpdated: $('.merge_request_updated_ago', element)?.textContent,
 					pipeline: {
-						passed: !!element.querySelector('status_success-icon'),
+						passed: !!$('[data-testid=status_success-icon]', element),
 						failed: false // TODO
 					},
-					comments: parseInt(element.querySelector('.issuable-comments').textContent.trim()),
+					comments: parseInt($('.issuable-comments', element).textContent.trim()),
 					project: {
 						name: getProjectName(titleElem.href),
 					},
@@ -211,6 +211,6 @@ javascript:
 		clearInterval(window[interval]);
 	}
 
-	window[interval] = setInterval(updateMergeRequestList, 5 * 60 * 1000);
+	window[interval] = setInterval(updateMergeRequestList, 1 * 60 * 1000);
 	updateMergeRequestList(true);
 })()
