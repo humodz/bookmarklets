@@ -5,7 +5,7 @@ javascript:
     return;
   }
 
-	Notification.requestPermission();
+	/* Notification.requestPermission(); */
 
 	const $ = (s, e = document) => e.querySelector(s);
 	const $$ = (s, e = document) => [...e.querySelectorAll(s)];
@@ -36,6 +36,7 @@ javascript:
 	}
 
 	async function updateMergeRequestList() {
+		console.log('Updating merge requests...', new Date());
 		const urls = (await fetchStarred()).map(it => it + '/-/merge_requests');
 
 		const mrsByProject = await Promise.all(
@@ -49,6 +50,7 @@ javascript:
 
 		for (const [url, mrs] of mrsByProject) {
 			if (mrs) {
+				const br = document.createElement('br');
 				const title = document.createElement('h5');
 				title.textContent = getProjectName(url);
 				contentBody.append(br, title, mrs);
@@ -64,6 +66,7 @@ javascript:
 			.replace(/[/]/g, ' / ');
 	}
 
+	/*
 	function getUserAvatar(userId, size = 64) {
 		return `https://gitlab.com/uploads/-/system/user/avatar/${userId}/avatar.png?width=${size}`;
 	}
@@ -94,11 +97,12 @@ javascript:
 			icon: mrInfo.author.avatar,
 		});
 	}
+	*/
 
 	function minutes(num) {
 		return num * 60 * 1000;
 	}
 
-	//setInterval(updateMergeRequestList, minutes(10));
+	setInterval(updateMergeRequestList, minutes(5));
 	updateMergeRequestList();
 })()
