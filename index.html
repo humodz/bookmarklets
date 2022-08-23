@@ -11,11 +11,67 @@
 	<header>
 		<h1>Bookmarklets</h1>
 	</header>
-	<main>
-		<p>Hello World</p>
-	</main>
-	<footer>
 
-	</footer>
+	<main>
+
+		<blockquote>
+			<strong>What do bookmarklets do?</strong>
+			<p>
+				A bookmarklet is a "one-click" tool which adds functionality to the
+				browser, such as modifying the appearance of a web page, querying a
+				search engine with search terms provided by previously selected text,
+				or submitting the current page to a translation or blogging service.
+			</p>
+
+			<cite>
+				- <a data-content="href" href="https://support.mozilla.org/en-US/kb/bookmarklets-perform-common-web-page-tasks"></a>
+			</cite>
+		</blockquote>
+
+		<h3><a data-src="js/hello.js">Hello World</a></h3>
+		<p>
+			Click the link above to try it out!
+		</p>
+		<p>
+			Drag the link into your bookmarks bar to save it, then you'll be able to run it on any website.
+		</p>
+
+		<h3><a data-src="js/confetti.js">Confetti</a></h3>
+		<p>
+			Throws some confetti.
+		</p>
+
+		<h3><a data-src="js/highlight-duplicate-ids.js">Highlight Duplicate Ids</a></h3>
+		<p>
+			Highlights elements with the same id. Also logs them to the DevTools console.
+		</p>
+
+		<h3><a data-src="js/show-password.js">Show Password</a></h3>
+		<p>
+			Displays the contents of password fields.
+		</p>
+
+		<!--
+		<h3><a data-src="js/.js"></a></h3>
+		<p>
+
+		</p>
+		-->
+
+	</main>
+
+	<script>
+		document.querySelectorAll('a[data-src]').forEach(async anchor => {
+			const src = anchor.getAttribute('data-src');
+			const script = await fetch(src).then(res => res.text());
+			anchor.href = script;
+		});
+
+		document.querySelectorAll('[data-content').forEach(element => {
+			const attribute = element.getAttribute('data-content');
+			const content = element.getAttribute(attribute);
+			element.textContent = content;
+		});
+	</script>
 </body>
 </html>

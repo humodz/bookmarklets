@@ -1,0 +1,4 @@
+javascript:
+(() => {
+  alert('Hello World!');
+})()
