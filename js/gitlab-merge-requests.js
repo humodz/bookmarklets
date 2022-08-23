@@ -66,6 +66,8 @@ javascript:
 				change => !(change.type === 'created' && change.mr.author.id === myself.id)
 			);
 
+			console.log('!!! changes', interestingChanges);
+
 			for (const change of interestingChanges) {
 				notify(change);
 			}
