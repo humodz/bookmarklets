@@ -2,7 +2,7 @@
 
 https://humodz.github.io/bookmarklets
 
-> **What do bookmarklets do? **
+> **What do bookmarklets do?**
 > A bookmarklet is a "one-click" tool which adds functionality to the
 > browser, such as modifying the appearance of a web page, querying a
 > search engine with search terms provided by previously selected text,
