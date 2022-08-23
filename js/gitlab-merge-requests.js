@@ -37,16 +37,15 @@ javascript:
 	let oldMrInfos = [];
 
 	async function updateMergeRequestList(first = false) {
-		console.log('Updating merge requests...', new Date());
+		console.log('Updating merge requests...', new Date().toTimeString());
 		const urls = (await fetchStarred()).map(it => it + '/-/merge_requests');
 
 		const mrsByProject = await Promise.all(
 			urls.map(async url => [url, await getMergeRequests(url)])
 		);
 
-		const contentBody = $('#content-body');
-
 		$$('#content-body > *').forEach(it => it.remove());
+		const contentBody = $('#content-body');
 
 		for (const [url, mrs] of mrsByProject) {
 			if (mrs) {
@@ -58,24 +57,19 @@ javascript:
 		}
 
 		const newMrInfos = getMergeRequestInfos();
-		console.log('!!!', newMrInfos);
 
 		if (!first) {
 			const myself = await getCurrentUser();
 			const changes = diff(oldMrInfos, newMrInfos);
 
 			const interestingChanges = changes.filter(
-				change => !(change.type === 'created' && change.mr.author.id !== myself.id)
+				change => !(change.type === 'created' && change.mr.author.id === myself.id)
 			);
 
 			for (const change of interestingChanges) {
 				notify(change);
 			}
 		}
-		// notify({
-		// 	type: 'created',
-		// 	mr: newMrInfos[0],
-		// });
 
 		oldMrInfos = newMrInfos;
 	}
@@ -128,7 +122,7 @@ javascript:
 	}
 
 	function getIcon(name) {
-		return 'https://humodz.github.io/bookmarklets/' + name + '.png';
+		return 'https://humodz.github.io/bookmarklets/icons/' + name + '.png';
 	}
 
 	function notify(change) {
@@ -140,7 +134,7 @@ javascript:
 				body: [
 					`in ${mr.project.name}`,
 					`by ${mr.author.name}`,
-				].join('\n\n'),
+				].join('\n'),
 			});
 		} else if (change.type === 'updated') {
 			new Notification(`Updated: ${mr.title}`, {
@@ -148,27 +142,27 @@ javascript:
 				body: [
 					`in ${mr.project.name}`,
 					`by ${mr.author.name}`,
-				].join('\n\n'),
+				].join('\n'),
 			});
 		} else if (change.type === 'approved') {
 			new Notification(`Approved: ${mr.title}`, {
 				icon: getIcon('check-mark-button'),
-				body:`in ${mr.project.name}`,
+				body: `in ${mr.project.name}`,
 			});
 		} else if (change.type === 'revoked-approval') {
 			new Notification(`Approval revoked: ${mr.title}`, {
 				icon: getIcon('thumbs-down'),
-				body:`in ${mr.project.name}`,
+				body: `in ${mr.project.name}`,
 			});
 		} else if (change.type === 'pipeline-passed') {
 			new Notification(`CI passed: ${mr.title}`, {
 				icon: getIcon('rocket'),
-				body:`in ${mr.project.name}`,
+				body: `in ${mr.project.name}`,
 			});
 		} else if (change.type === 'new-comments') {
-			new Notification(`${change.delta} new comments: ${mr.title}`, {
+			new Notification(`${change.delta} new comment(s): ${mr.title}`, {
 				icon: getIcon('speech-balloon'),
-				body:`in ${mr.project.name}`,
+				body: `in ${mr.project.name}`,
 			});
 		}
 	}
@@ -194,6 +188,7 @@ javascript:
 					lastUpdated: element.querySelector('.merge_request_updated_ago')?.textContent,
 					pipeline: {
 						passed: !!element.querySelector('status_success-icon'),
+						failed: false // TODO
 					},
 					comments: parseInt(element.querySelector('.issuable-comments').textContent.trim()),
 					project: {
@@ -208,6 +203,12 @@ javascript:
 			});
 	}
 
-	false && setInterval(updateMergeRequestList, 5 * 60 * 1000);
+	const interval = '__BOOKMARKET_INTERVAL_ID__';
+
+	if (window[interval]) {
+		clearInterval(window[interval]);
+	}
+
+	window[interval] = setInterval(updateMergeRequestList, 5 * 60 * 1000);
 	updateMergeRequestList(true);
 })()
