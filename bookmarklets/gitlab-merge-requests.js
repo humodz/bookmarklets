@@ -63,8 +63,12 @@ javascript:
 			const changes = diff(oldMrInfos, newMrInfos);
 
 			const interestingChanges = changes.filter(change => {
-				const createdByMe = (change.type === 'created' && change.mr.author.id === myself.id);
-				return !createdByMe;
+				const createdOrUpdatedByMe = (
+					['created', 'updated', 'ready-for-review'].includes(change.type) &&
+					change.mr.author.id === myself.id
+				);
+
+				return !createdOrUpdatedByMe;
 			});
 
 			console.log('!!! changes', interestingChanges);
@@ -214,7 +218,7 @@ javascript:
 					approved: !!$('[data-testid=approval-solid-icon]', element),
 					isDraft: title.startsWith('Draft:'),
 					mergeConflict: !!$('[data-testid=warning-solid-icon]', element),
-					lastUpdated: $('.merge_request_updated_ago', element)?.textContent,
+					lastUpdated: $('.merge_request_updated_ago', element).getAttribute('datetime'),
 					pipelineStatus: pipelineStatuses.find(it => !!$(it.selector, element))?.value || 'none',
 					comments: parseInt($('.issuable-comments', element).textContent.trim()),
 					project: {
