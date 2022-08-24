@@ -62,9 +62,10 @@ javascript:
 			const myself = await getCurrentUser();
 			const changes = diff(oldMrInfos, newMrInfos);
 
-			const interestingChanges = changes.filter(
-				change => !(change.type === 'created' && change.mr.author.id === myself.id)
-			);
+			const interestingChanges = changes.filter(change => {
+				const createdByMe = (change.type === 'created' && change.mr.author.id === myself.id);
+				return !createdByMe;
+			});
 
 			console.log('!!! changes', interestingChanges);
 
@@ -202,7 +203,8 @@ javascript:
 		return $$('#content-body .merge-request')
 			.map(element => {
 				const titleElem = $('.title a', element);
-				const authorElem = $('.author-link', element);
+				const authorElem = $('.issuable-info .author-link', element);
+				const assigneeElem = $('.issuable-meta .author-link[title^="Assigned to"]', element);
 
 				const title = titleElem.textContent.trim();
 
@@ -220,8 +222,11 @@ javascript:
 					},
 					author: {
 						name: authorElem.getAttribute('data-name'),
-						id: authorElem.getAttribute('data-user-id'),
+						username: authorElem.getAttribute('data-username'),
 						avatar: getUserAvatar(authorElem.getAttribute('data-user-id')),
+					},
+					assignee: !assigneeElem ? null : {
+						username: new URL(assigneeElem.href).pathname.replace('/', '')
 					},
 				};
 			});
@@ -233,6 +238,7 @@ javascript:
 		clearInterval(window[interval]);
 	}
 
-	window[interval] = setInterval(updateMergeRequestList, 1 * 60 * 1000);
+	const updateFrequencyMinutes = window.__BOOKMARKLET_UPDATE_FREQUENCY_MINUTES__ || 1;
+	window[interval] = setInterval(updateMergeRequestList, updateFrequencyMinutes * 60 * 1000);
 	updateMergeRequestList(true);
 })()
