@@ -104,11 +104,15 @@ javascript:
 			}
 
 			if (!mr.approved && oldMr.approved) {
-				changes.push({ type: 'revoked-approval', mr });
+				changes.push({ type: 'approval-revoked', mr });
 			}
 
-			if (mr.pipeline.passed && !oldMr.pipeline.passed) {
-				changes.push({ type: 'pipeline-passed', mr });
+			if (mr.pipelineStatus !== oldMr.pipelineStatus) {
+				changes.push({ type: 'pipeline-changed', mr });
+			}
+
+			if (mr.mergeConflict && !oldMr.mergeConflict) {
+				changes.push({ type: 'merge-conflict', mr });
 			}
 
 			if (mr.comments > oldMr.comments) {
@@ -151,19 +155,30 @@ javascript:
 				icon: getIcon('check-mark-button'),
 				body: `in ${mr.project.name}`,
 			});
-		} else if (change.type === 'revoked-approval') {
+		} else if (change.type === 'approval-revoked') {
 			new Notification(`Approval revoked: ${mr.title}`, {
 				icon: getIcon('thumbs-down'),
 				body: `in ${mr.project.name}`,
 			});
-		} else if (change.type === 'pipeline-passed') {
-			new Notification(`CI passed: ${mr.title}`, {
-				icon: getIcon('rocket'),
+		} else if (change.type === 'pipeline-changed') {
+			const icons = {
+				'passed': 'rocket',
+				'running': 'hammer-and-wrench.png',
+				'failed': 'fire',
+			};
+
+			new Notification(`CI ${mr.pipelineStatus}: ${mr.title}`, {
+				icon: getIcon(icons[mr.pipelineStatus]),
 				body: `in ${mr.project.name}`,
 			});
 		} else if (change.type === 'new-comments') {
 			new Notification(`${change.delta} new comment(s): ${mr.title}`, {
 				icon: getIcon('speech-balloon'),
+				body: `in ${mr.project.name}`,
+			});
+		} else if (change.type === 'merge-conflict') {
+			new Notification(`Merge conflict: ${mr.title}`, {
+				icon: getIcon('warning'),
 				body: `in ${mr.project.name}`,
 			});
 		}
@@ -178,6 +193,12 @@ javascript:
 	}
 
 	function getMergeRequestInfos() {
+		const pipelineStatuses = [
+			{ value: 'passed', selector: '.ci-status-icon-success' },
+			{ value: 'running', selector: '.ci-status-icon-running' },
+			{ value: 'failed', selector: '.ci-status-icon-failed' },
+		];
+
 		return $$('#content-body .merge-request')
 			.map(element => {
 				const titleElem = $('.title a', element);
@@ -187,11 +208,9 @@ javascript:
 					title: titleElem.textContent,
 					href: titleElem.href,
 					approved: !!$('[data-testid=approval-solid-icon]', element),
+					mergeConflict: !!$('[data-testid=warning-solid-icon]', element),
 					lastUpdated: $('.merge_request_updated_ago', element)?.textContent,
-					pipeline: {
-						passed: !!$('[data-testid=status_success-icon]', element),
-						failed: false // TODO
-					},
+					pipelineStatus: pipelineStatuses.find(it => !!$(it.selector, element))?.value || 'none',
 					comments: parseInt($('.issuable-comments', element).textContent.trim()),
 					project: {
 						name: getProjectName(titleElem.href),

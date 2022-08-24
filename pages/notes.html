@@ -40,9 +40,8 @@
       Caveats
     </h2>
     <p>
-      Bookmarklets are parsed as if they are in a single line.
-      For this reason, <code>// inline comments</code> will cause syntax errors,
-      and semicolons are usually required
+      Bookmarklets are executed as a single line of code.
+      For this reason, lines without semicolons and <code>// inline comments</code> will cause syntax errors.
     </p>
     <p>
       It's not possible for a bookmarklet to run more code after changing the current page.
@@ -62,6 +61,12 @@
       class="language-js"
       data-fetch="samples/copy-to-clipboard.js"
     ></code></pre>
+
+    <h3>Save (Download) File</h3>
+    <pre><code
+      class="language-js"
+      data-fetch="samples/save-file.js"
+    ></code></pre>
   </main>
   <footer></footer>
 
@@ -69,15 +74,25 @@
     const $$ = s => [...document.querySelectorAll(s)];
 
     async function main() {
-      const promises = $$('[data-fetch]').map(async element => {
+      const populateCodeSnippets = $$('[data-fetch]').map(async element => {
         const url = element.getAttribute('data-fetch');
         const content = await fetch(url).then(res => res.text());
         element.textContent = content;
       });
 
-      await Promise.all(promises);
+      await Promise.all(populateCodeSnippets);
 
       hljs.highlightAll();
+
+      $$('pre code').forEach(element => element.addEventListener('click', event => {
+
+        const range = document.createRange();
+        range.selectNodeContents(element);
+
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }));
     }
 
     main();
