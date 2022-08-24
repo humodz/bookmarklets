@@ -9,3 +9,13 @@ https://humodz.github.io/bookmarklets
 > or submitting the current page to a translation or blogging service.
 
 [Use bookmarklets to quickly perform common web page tasks](https://support.mozilla.org/en-US/kb/bookmarklets-perform-common-web-page-tasks)
+
+
+## Development
+
+To run this project locally, install http-server and run as follows:
+
+```sh
+npm install --global http-server
+http-server ..
+```

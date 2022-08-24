@@ -115,6 +115,10 @@ javascript:
 				changes.push({ type: 'merge-conflict', mr });
 			}
 
+			if (!mr.isDraft && oldMr.isDraft) {
+				changes.push({ type: 'ready-for-review', mr });
+			}
+
 			if (mr.comments > oldMr.comments) {
 				changes.push({
 					type: 'new-comments',
@@ -134,51 +138,47 @@ javascript:
 	function notify(change) {
 		const mr = change.mr;
 
-		if (change.type === 'created') {
-			new Notification(`New: ${mr.title}`, {
-				icon: mr.author.avatar,
-				body: [
-					`in ${mr.project.name}`,
-					`by ${mr.author.name}`,
-				].join('\n'),
-			});
-		} else if (change.type === 'updated') {
-			new Notification(`Updated: ${mr.title}`, {
-				icon: mr.author.avatar,
-				body: [
-					`in ${mr.project.name}`,
-					`by ${mr.author.name}`,
-				].join('\n'),
-			});
-		} else if (change.type === 'approved') {
-			new Notification(`Approved: ${mr.title}`, {
-				icon: getIcon('check-mark-button'),
-				body: `in ${mr.project.name}`,
-			});
-		} else if (change.type === 'approval-revoked') {
-			new Notification(`Approval revoked: ${mr.title}`, {
-				icon: getIcon('thumbs-down'),
-				body: `in ${mr.project.name}`,
-			});
-		} else if (change.type === 'pipeline-changed') {
-			const icons = {
-				'passed': 'rocket',
-				'running': 'hammer-and-wrench.png',
-				'failed': 'fire',
-			};
+		const simpleNotifications = {
+			'approved': { msg: 'Approved', icon: 'check-mark-button' },
+			'approval-revoked': { msg: 'Approval revoked', icon: 'thumbs-down' },
+			'merge-conflict': { msg: 'Merge conflict', icon: 'warning' },
+		};
 
-			new Notification(`CI ${mr.pipelineStatus}: ${mr.title}`, {
-				icon: getIcon(icons[mr.pipelineStatus]),
+		const authorNotifications = {
+			'created': 'New',
+			'updated': 'Updated',
+			'ready-for-review': 'Ready for review',
+		};
+
+		if (simpleNotifications[change.type]) {
+			const { msg, icon } = simpleNotifications[change.type];
+
+			new Notification(`${msg}: ${mr.title}`, {
+				icon: getIcon(icon),
 				body: `in ${mr.project.name}`,
+			});
+		} else if (authorNotifications[change.type]) {
+			new Notification(`${authorNotifications[change.type]}: ${mr.title}`, {
+				icon: mr.author.avatar,
+				body: [
+					`in ${mr.project.name}`,
+					`by ${mr.author.name}`,
+				].join('\n'),
 			});
 		} else if (change.type === 'new-comments') {
 			new Notification(`${change.delta} new comment(s): ${mr.title}`, {
 				icon: getIcon('speech-balloon'),
 				body: `in ${mr.project.name}`,
 			});
-		} else if (change.type === 'merge-conflict') {
-			new Notification(`Merge conflict: ${mr.title}`, {
-				icon: getIcon('warning'),
+		} else if (change.type === 'pipeline-changed') {
+			const icons = {
+				'passed': 'rocket',
+				'running': 'hammer-and-wrench',
+				'failed': 'fire',
+			};
+
+			new Notification(`CI ${mr.pipelineStatus}: ${mr.title}`, {
+				icon: getIcon(icons[mr.pipelineStatus]),
 				body: `in ${mr.project.name}`,
 			});
 		}
@@ -204,10 +204,13 @@ javascript:
 				const titleElem = $('.title a', element);
 				const authorElem = $('.author-link', element);
 
+				const title = titleElem.textContent.trim();
+
 				return {
-					title: titleElem.textContent,
+					title,
 					href: titleElem.href,
 					approved: !!$('[data-testid=approval-solid-icon]', element),
+					isDraft: title.startsWith('Draft:'),
 					mergeConflict: !!$('[data-testid=warning-solid-icon]', element),
 					lastUpdated: $('.merge_request_updated_ago', element)?.textContent,
 					pipelineStatus: pipelineStatuses.find(it => !!$(it.selector, element))?.value || 'none',
