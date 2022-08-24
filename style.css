@@ -34,3 +34,12 @@ img, video {
     stroke: currentColor;
     fill: currentColor;
 }
+
+p code {
+  white-space: nowrap;
+}
+
+pre code {
+  font-size: 0.8em;
+  background-color: var(--accent-bg) !important;
+}

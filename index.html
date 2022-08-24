@@ -3,8 +3,9 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="icon" type="image/png" href="favicon.png" />
+
 	<title>Bookmarklets</title>
+	<link rel="icon" type="image/png" href="favicon.png" />
 	<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
 	<link rel="stylesheet" href="style.css">
 </head>
@@ -15,6 +16,7 @@
 			<span style="vertical-align: middle;">Bookmarklets</span>
 		</h1>
 		<nav>
+			<a href="pages/notes.html">Notes</a>
 			<a href="https://github.com/humodz/bookmarklets" target="_blank">
 				<svg class="icon" viewBox="0 0 32 32"><path d="M16 0.395c-8.836 0-16 7.163-16 16 0 7.069 4.585 13.067 10.942 15.182 0.8 0.148 1.094-0.347 1.094-0.77 0-0.381-0.015-1.642-0.022-2.979-4.452 0.968-5.391-1.888-5.391-1.888-0.728-1.849-1.776-2.341-1.776-2.341-1.452-0.993 0.11-0.973 0.11-0.973 1.606 0.113 2.452 1.649 2.452 1.649 1.427 2.446 3.743 1.739 4.656 1.33 0.143-1.034 0.558-1.74 1.016-2.14-3.554-0.404-7.29-1.777-7.29-7.907 0-1.747 0.625-3.174 1.649-4.295-0.166-0.403-0.714-2.030 0.155-4.234 0 0 1.344-0.43 4.401 1.64 1.276-0.355 2.645-0.532 4.005-0.539 1.359 0.006 2.729 0.184 4.008 0.539 3.054-2.070 4.395-1.64 4.395-1.64 0.871 2.204 0.323 3.831 0.157 4.234 1.026 1.12 1.647 2.548 1.647 4.295 0 6.145-3.743 7.498-7.306 7.895 0.574 0.497 1.085 1.47 1.085 2.963 0 2.141-0.019 3.864-0.019 4.391 0 0.426 0.288 0.925 1.099 0.768 6.354-2.118 10.933-8.113 10.933-15.18 0-8.837-7.164-16-16-16z"></path></svg>
 				Github
@@ -51,7 +53,7 @@
 		</blockquote>
 
 
-		<h3><a data-src="js/hello.js">Hello World</a></h3>
+		<h3><a data-src="bookmarklets/hello.js">Hello World</a></h3>
 		<p>
 			Click the link above to try it out!
 		</p>
@@ -59,20 +61,12 @@
 			Drag the link into your bookmarks bar to save it, then you'll be able to run it on any website.
 		</p>
 
-		<h3><a data-src="js/confetti.js">Confetti</a></h3>
+		<h3><a data-src="bookmarklets/confetti.js">Confetti</a></h3>
 		<p>
 			Throws some confetti.
 		</p>
 
-		<h3><a data-src="js/highlight-duplicate-ids.js">Highlight Duplicate Ids</a></h3>
-		<p>
-			Highlights elements with the same id. Also logs them to the DevTools console.
-		</p>
-		<p>
-			These two elements have the same id: <strong id="dup">First</strong> <em id="dup">Second</em>
-		</p>
-
-		<h3><a data-src="js/show-passwords.js">Show Passwords</a></h3>
+		<h3><a data-src="bookmarklets/show-passwords.js">Show Passwords</a></h3>
 		<p>
 			Displays the contents of password fields. Run again to hide them back.
 		</p>
@@ -80,7 +74,15 @@
 			<input type="password" value="hunter2">
 		</p>
 
-		<h3><a data-src="js/gitlab-merge-requests.js">GitLab Merge Requests</a></h3>
+		<h3><a data-src="bookmarklets/highlight-duplicate-ids.js">Highlight Duplicate Ids</a></h3>
+		<p>
+			Highlights elements with the same id. Also logs them to the DevTools console.
+		</p>
+		<p>
+			These two elements have the same id: <strong id="dup">First</strong> <em id="dup">Second</em>
+		</p>
+
+		<h3><a data-src="bookmarklets/gitlab-merge-requests.js">GitLab Merge Requests</a></h3>
 		<p>
 			Lists merge requests for your starred projects.
 		</p>
@@ -88,13 +90,13 @@
 			Must be used in the <a href="https://gitlab.com/dashboard/merge_requests">Merge Requests</a> page.
 		</p>
 
-		<h3><a data-src="js/copy-cognito-access-token.js">Copy AWS Cognito Access Token</a></h3>
+		<h3><a data-src="bookmarklets/copy-cognito-access-token.js">Copy AWS Cognito Access Token</a></h3>
 		<p>
 			Copies to the clipboard the Cognito access token used by the current page.
 		</p>
 
 		<!--
-		<h3><a data-src="js/.js"></a></h3>
+		<h3><a data-src="bookmarklets/.js"></a></h3>
 		<p>
 
 		</p>
@@ -135,5 +137,6 @@
 			element.textContent = content;
 		});
 	</script>
+	<script src="js/data-innerhtml.js"></script>
 </body>
 </html>
