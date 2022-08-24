@@ -133,10 +133,6 @@ javascript:
 		return changes;
 	}
 
-	function getIcon(name) {
-		return 'https://humodz.github.io/bookmarklets/icons/' + name + '.png';
-	}
-
 	function notify(change) {
 		const mr = change.mr;
 
@@ -184,6 +180,10 @@ javascript:
 				body: `in ${mr.project.name}`,
 			});
 		}
+	}
+
+	function getIcon(name) {
+		return 'https://humodz.github.io/bookmarklets/icons/' + name + '.png';
 	}
 
 	async function getCurrentUser() {
@@ -234,12 +234,9 @@ javascript:
 	}
 
 	const interval = '__BOOKMARKET_INTERVAL_ID__';
-
-	if (window[interval]) {
-		clearInterval(window[interval]);
-	}
-
 	const updateFrequencyMinutes = window.__BOOKMARKLET_UPDATE_FREQUENCY_MINUTES__ || 1;
+
+	clearInterval(window[interval]);
 	window[interval] = setInterval(updateMergeRequestList, updateFrequencyMinutes * 60 * 1000);
 	updateMergeRequestList(true);
 })()
