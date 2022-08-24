@@ -43,3 +43,8 @@ pre code {
   font-size: 0.8em;
   background-color: var(--accent-bg) !important;
 }
+
+h1 a {
+  color: inherit !important;
+  text-decoration: none;
+}
