@@ -1,10 +1,5 @@
 javascript:
 (async () => {
-  if (window.location.pathname !== '/dashboard/merge_requests') {
-    alert('This script only works in the Merge Requests page');
-    return;
-  }
-
 	Notification.requestPermission();
 
 	const $ = (s, e = document) => e.querySelector(s);
