@@ -44,6 +44,8 @@ javascript:
 
 		for (const [url, mrs] of mrsByProject) {
 			if (mrs) {
+				$$('a', mrs).forEach(anchor => anchor.target = '_blank');
+
 				const br = document.createElement('br');
 				const title = document.createElement('h5');
 				title.textContent = getProjectName(url);
