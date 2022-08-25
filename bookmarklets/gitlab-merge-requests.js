@@ -62,7 +62,7 @@ javascript:
 			const interestingChanges = changes.filter(change => {
 				const createdOrUpdatedByMe = (
 					['created', 'updated', 'ready-for-review'].includes(change.type) &&
-					change.mr.author.id === myself.id
+					change.mr.author.username === myself.username
 				);
 
 				return !createdOrUpdatedByMe;
