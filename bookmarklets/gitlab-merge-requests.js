@@ -173,6 +173,7 @@ javascript:
 				'passed': 'rocket',
 				'running': 'hammer-and-wrench',
 				'failed': 'fire',
+				'canceled': 'prohibited',
 			};
 
 			new Notification(`CI ${mr.pipelineStatus}: ${mr.title}`, {
@@ -199,6 +200,7 @@ javascript:
 			{ value: 'passed', selector: '.ci-status-icon-success' },
 			{ value: 'running', selector: '.ci-status-icon-running' },
 			{ value: 'failed', selector: '.ci-status-icon-failed' },
+			{ value: 'canceled', selector: '.ci-status-icon-canceled' },
 		];
 
 		return $$('#content-body .merge-request')
