@@ -64,13 +64,11 @@ javascript:
       body: JSON.stringify(requestBody),
     });
 
-    const body = await response.text();
-
-    if (response.status >= 400 && response.status <= 500) {
+    if (response.status >= 400) {
       throw new Error(`Failed to create pipeline: ${response.status}`);
     }
 
-    return body;
+    return response;
   }
 
   function fail(message, error) {
