@@ -27,8 +27,8 @@ javascript:
     try {
       return $('.js-source-branch-copy')
         .getAttribute('data-clipboard-text');
-    } catch (error) {
-      fail('Wrong page');
+    } catch {
+      return prompt('What branch do you want to deploy?');
     }
   }
 
@@ -73,12 +73,21 @@ javascript:
 
   function fail(message, error) {
     alert(message);
-    throw error || new Error('message');
+    throw error || new Error(message);
+  }
+
+  if (!$('#project_id')) {
+    fail(`You must be in a project's page!`);
   }
 
   const projectBaseUrl = getProjectBaseUrl();
   const csrfToken = await getCsrfToken(projectBaseUrl);
   const branch = getCurrentBranch();
+
+  if (!branch) {
+    return;
+  }
+
   const envs = askForEnvs();
 
   const result = await runPipeline({
