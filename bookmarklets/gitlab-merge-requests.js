@@ -170,6 +170,7 @@ javascript:
 			});
 		} else if (change.type === 'pipeline-changed') {
 			const icons = {
+				'pending': 'hourglass-done',
 				'passed': 'rocket',
 				'running': 'hammer-and-wrench',
 				'failed': 'fire',
@@ -197,6 +198,7 @@ javascript:
 
 	function getMergeRequestInfos() {
 		const pipelineStatuses = [
+			{ value: 'pending', selector: '.ci-status-icon-pending' },
 			{ value: 'passed', selector: '.ci-status-icon-success' },
 			{ value: 'running', selector: '.ci-status-icon-running' },
 			{ value: 'failed', selector: '.ci-status-icon-failed' },
