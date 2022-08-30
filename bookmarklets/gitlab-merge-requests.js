@@ -177,10 +177,14 @@ javascript:
 				'canceled': 'prohibited',
 			};
 
-			new Notification(`CI ${mr.pipelineStatus}: ${mr.title}`, {
-				icon: getIcon(icons[mr.pipelineStatus]),
-				body: `in ${mr.project.name}`,
-			});
+			if (icons[mr.pipelineStatus]) {
+				new Notification(`CI ${mr.pipelineStatus}: ${mr.title}`, {
+					icon: getIcon(icons[mr.pipelineStatus]),
+					body: `in ${mr.project.name}`,
+				});
+			} else {
+				console.info('Unreported pipeline status:', mr.pipelineStatus, mr);
+			}
 		}
 	}
 
