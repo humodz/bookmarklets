@@ -9,6 +9,14 @@
 	<link rel="icon" type="image/png" href="favicon.png" />
 	<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
 	<link rel="stylesheet" href="style.css">
+
+  <style>
+    img {
+      margin: auto;
+      display: block;
+      border: 3px solid var(--text-light);
+    }
+  </style>
 </head>
 <body>
 	<header>
@@ -36,82 +44,60 @@
 			Back to Top
 		</button>
 
-		<details>
-			<summary>Index</summary>
-			<p>Drag these to your bookmarks toolbar</p>
-			<ul id="index-list"></ul>
-		</details>
+    <h2>GitLab Merge Requests</h2>
 
-		<blockquote>
-			<strong>What do bookmarklets do?</strong>
-			<p>
-				A bookmarklet is a "one-click" tool which adds functionality to the
-				browser, such as modifying the appearance of a web page, querying a
-				search engine with search terms provided by previously selected text,
-				or submitting the current page to a translation or blogging service.
-			</p>
-
-			<cite>
-				- <a data-content="href" href="https://support.mozilla.org/en-US/kb/bookmarklets-perform-common-web-page-tasks"></a>
-			</cite>
-		</blockquote>
+    <h3>What's This?</h3>
 
 
-		<h3><a data-src="bookmarklets/hello.js">Hello World</a></h3>
-		<p>
-			Click the link above to try it out!
-		</p>
-		<p>
-			Drag the link into your bookmarks bar to save it, then you'll be able to run it on any website.
-		</p>
+    <p>
+      This is a script that lists the merge requests for the repositories you're interested in.
+      The list is automatically updated, and it sends a notification whenever there's something new.
+    </p>
 
-		<h3><a data-src="bookmarklets/confetti.js">Confetti</a></h3>
-		<p>
-			Throws some confetti.
-		</p>
+    <p>
+      It can be stored in your browser's bookmarks bar and doesn't require installation or browser extensions.
+    </p>
 
-		<h3><a data-src="bookmarklets/show-passwords.js">Show Passwords</a></h3>
-		<p>
-			Displays the contents of password fields. Run again to hide them back.
-		</p>
-		<p>
-			<input type="password" value="hunter2">
-		</p>
+    <h3>How to Use</h3>
 
-		<h3><a data-src="bookmarklets/highlight-duplicate-ids.js">Highlight Duplicate Ids</a></h3>
-		<p>
-			Highlights elements with the same id. Also logs them to the DevTools console.
-		</p>
-		<p>
-			These two elements have the same id: <strong id="dup">First</strong> <em id="dup">Second</em>
-		</p>
+    <h4>Step 1</h4>
 
-		<h3><a data-src="bookmarklets/gitlab-merge-requests.js">GitLab Merge Requests</a></h3>
-		<p>
-			Lists merge requests for your starred projects.
-		</p>
-		<p>
-			Updates the page automatically every minute and
-			sends a notification when there are new changes.
-		</p>
+    <p>
+      In GitLab, star the repositories you want to watch:
+    </p>
 
-		<h3><a data-src="bookmarklets/gitlab-run-pipeline.js">GitLab Run Pipeline</a></h3>
-		<p>
-			Runs pipelines in the current project. If the current page is a merge request, then the
-			merge request's branch is the one to be executed, otherwise the branch must be provided.
-		</p>
+    <img src="images/star-project.png">
 
-		<h3><a data-src="bookmarklets/copy-cognito-access-token.js">Copy AWS Cognito Access Token</a></h3>
-		<p>
-			Copies to the clipboard the Cognito access token used by the current page.
-		</p>
+    <h4>Step 2</h4>
 
-		<!--
-		<h3><a data-src="bookmarklets/.js"></a></h3>
-		<p>
+    <p>
+      In your browser's settings, enable the Bookmarks bar:
+    </p>
 
-		</p>
-		-->
+    <img src="images/enable-bookmarks-bar.png">
+
+    <h4>Step 3</h4>
+
+    <p>
+      Drag the link below into the bookmarks bar:
+    </p>
+
+		<h4><a data-src="bookmarklets/gitlab-merge-requests.js">GitLab Merge Requests</a></h4>
+
+    <img src="images/drag-into-bar.png">
+
+    <h4>Step 4</h4>
+
+    <p>
+      In a GitLab page, click the <strong>GitLab Merge Requests</strong> bookmark you just created
+      to run the script.
+    </p>
+
+    <img src="images/click-bookmark.png">
+
+    <p>Don't forget to enable notifications:</p>
+
+    <img src="images/enable-notifications.png">
 
 	</main>
 
@@ -128,7 +114,6 @@
 	<script src="https://unpkg.com/uglify-js@3.17.0/lib/propmangle.js"></script>
 
 	<script>
-
 		const $$ = (s, e = document) => [...e.querySelectorAll(s)];
 
 		const listItemPromises = $$('a[data-src]').map(async anchor => {
@@ -145,17 +130,6 @@
 			const listItem = document.createElement('li');
 			listItem.append(anchor.cloneNode(true));
 			return listItem;
-		});
-
-		Promise.all(listItemPromises).then(listItems => {
-			const indexList = document.querySelector('#index-list');
-			indexList.append(...listItems);
-		});
-
-		document.querySelectorAll('[data-content]').forEach(element => {
-			const attribute = element.getAttribute('data-content');
-			const content = element.getAttribute(attribute);
-			element.textContent = content;
 		});
 	</script>
 </body>
