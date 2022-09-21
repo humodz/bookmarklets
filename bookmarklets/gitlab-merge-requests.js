@@ -65,10 +65,20 @@ javascript:
 					change.mr.author.username === myself.username
 				);
 
-				return !createdOrUpdatedByMe;
-			});
+				const changesThatCauseUpdate = [
+					'approved',
+					'approval-revoked',
+					'merge-conflict',
+					'ready-for-review',
+					'new-comments',
+				];
 
-			console.log('!!! changes', interestingChanges);
+				const duplicateUpdate = change.type === 'updated' && changes.some(otherChange =>
+					otherChange !== change && changesThatCauseUpdate.includes(otherChange.type)
+				);
+
+				return !createdOrUpdatedByMe && !duplicateUpdate;
+			});
 
 			for (const change of interestingChanges) {
 				notify(change);

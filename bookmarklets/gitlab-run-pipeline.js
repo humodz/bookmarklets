@@ -33,7 +33,7 @@ javascript:
   }
 
   function askForEnvs() {
-    const text = prompt('Please provide env variables separated by comma.\nExample:\n\n    env=dev');
+    const text = prompt('Please provide env variables separated by comma.\n\nExample:\n    env=dev');
 
     return text
       .split(',')
