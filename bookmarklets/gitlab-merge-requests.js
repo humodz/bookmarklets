@@ -42,6 +42,18 @@ javascript:
 		$$('#content-body > *').forEach(it => it.remove());
 		const contentBody = $('#content-body');
 
+		if (urls.length >= 20) {
+			const warning = document.createElement('h4');
+
+			warning.textContent = 'Note: only the merge requests of your first 20 starred projects are shown.';
+
+			Object.assign(warning.style, {
+				textAlign: 'center',
+			});
+
+			contentBody.append(warning);
+		}
+
 		for (const [url, mrs] of mrsByProject) {
 			if (mrs) {
 				$$('a', mrs).forEach(anchor => anchor.target = '_blank');
@@ -55,30 +67,24 @@ javascript:
 
 		const newMrInfos = getMergeRequestInfos();
 
-		if (!first) {
-			const myself = await getCurrentUser();
-			const changes = diff(oldMrInfos, newMrInfos);
+		if (newMrInfos.length === 0) {
+			const emptyState = document.createElement('h3');
+			emptyState.textContent = 'There are no open Merge Requests in your starred projects.';
 
-			const interestingChanges = changes.filter(change => {
-				const createdOrUpdatedByMe = (
-					['created', 'updated', 'ready-for-review'].includes(change.type) &&
-					change.mr.author.username === myself.username
-				);
-
-				const changesThatCauseUpdate = [
-					'approved',
-					'approval-revoked',
-					'merge-conflict',
-					'ready-for-review',
-					'new-comments',
-				];
-
-				const duplicateUpdate = change.type === 'updated' && changes.some(otherChange =>
-					otherChange !== change && changesThatCauseUpdate.includes(otherChange.type)
-				);
-
-				return !createdOrUpdatedByMe && !duplicateUpdate;
+			Object.assign(emptyState.style, {
+				textAlign: 'center',
+				marginTop: '3rem',
 			});
+
+			contentBody.append(emptyState);
+		}
+
+		if (!first) {
+			// TODO notify on merge or close?
+			const myself = await getCurrentUser();
+			const { changes } = diff(oldMrInfos, newMrInfos);
+
+			const interestingChanges = filterInterestingChanges(changes, myself);
 
 			for (const change of interestingChanges) {
 				notify(change);
@@ -140,7 +146,35 @@ javascript:
 			}
 		}
 
-		return changes;
+		const newMrHrefs = newMrInfos.map(it => it.href);
+		const deletedMrs = oldMrInfos.filter(it => !newMrHrefs.includes(it.href));
+
+		return { changes, deletedMrs };
+	}
+
+	function filterInterestingChanges(changes, myself) {
+		const interestingChanges = changes.filter(change => {
+			const createdOrUpdatedByMe = (
+				['created', 'updated', 'ready-for-review'].includes(change.type) &&
+				change.mr.author.username === myself.username
+			);
+
+			const changesThatCauseUpdate = [
+				'approved',
+				'approval-revoked',
+				'merge-conflict',
+				'ready-for-review',
+				'new-comments',
+			];
+
+			const duplicateUpdate = change.type === 'updated' && changes.some(otherChange =>
+				otherChange !== change && changesThatCauseUpdate.includes(otherChange.type)
+			);
+
+			return !createdOrUpdatedByMe && !duplicateUpdate;
+		});
+
+		return interestingChanges;
 	}
 
 	function notify(change) {
