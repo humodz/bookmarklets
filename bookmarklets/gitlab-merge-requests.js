@@ -22,18 +22,11 @@ javascript:
 		return elem;
 	}
 
-	async function fetchStarred() {
-		const url = 'https://gitlab.com/dashboard/projects/starred';
-		const dom = await fetchDom(url);
-		const projects = $$('.project-details h2 a', dom).map(el => el.href);
-		return projects;
-	}
-
 	let oldMrInfos = [];
 
 	async function updateMergeRequestList(first = false) {
 		console.log('Updating merge requests...', new Date().toTimeString());
-		const urls = (await fetchStarred()).map(it => it + '/-/merge_requests');
+		const urls = (await getStarredProjects()).map(it => it.web_url + '/-/merge_requests');
 
 		const mrsByProject = await Promise.all(
 			urls.map(async url => [url, await getMergeRequests(url)])
@@ -42,10 +35,10 @@ javascript:
 		$$('#content-body > *').forEach(it => it.remove());
 		const contentBody = $('#content-body');
 
-		if (urls.length >= 20) {
+		if (urls.length === 100) {
 			const warning = document.createElement('h4');
 
-			warning.textContent = 'Note: only the merge requests of your first 20 starred projects are shown.';
+			warning.textContent = 'Note: only the merge requests of your first 100 starred projects are shown.';
 
 			Object.assign(warning.style, {
 				textAlign: 'center',
@@ -238,6 +231,12 @@ javascript:
 
 	async function getCurrentUser() {
 		return await fetch('/api/v4/user').then(res => res.json());
+	}
+
+	async function getStarredProjects() {
+		const user = await getCurrentUser();
+		const url = `/api/v4/users/${user.id}/starred_projects?simple=true&order_by=name&per_page=100`;
+		return await fetch(url).then(res => res.json());
 	}
 
 	function getUserAvatar(userId, size = 64) {
