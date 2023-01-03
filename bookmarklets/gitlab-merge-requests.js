@@ -268,7 +268,7 @@ javascript:
 					mergeConflict: !!$('[data-testid=warning-solid-icon]', element),
 					lastUpdated: $('.merge_request_updated_ago', element).getAttribute('datetime'),
 					pipelineStatus: pipelineStatuses.find(it => !!$(it.selector, element))?.value || 'none',
-					comments: parseInt($('.issuable-comments', element).textContent.trim()),
+					comments: parseInt($('[data-testid=issuable-comments]', element).textContent.trim()),
 					project: {
 						name: getProjectName(titleElem.href),
 					},
