@@ -13,7 +13,7 @@ https://humodz.github.io/bookmarklets
 
 ## Development
 
-To run this project locally, install http-server and run as follows:
+To test this project locally, install http-server and run it as follows:
 
 ```sh
 npm install --global http-server

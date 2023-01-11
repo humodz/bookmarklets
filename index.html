@@ -1,167 +1,172 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-	<title>Bookmarklets</title>
+  <title>Bookmarklets</title>
   <base href="/bookmarklets/">
-	<link rel="icon" type="image/png" href="favicon.png" />
-	<link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
-	<link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-	<header>
-		<h1>
-			<a href="#">
-				<img src="favicon.png" alt="" style="height: 0.9em; vertical-align: middle">
-				<span style="vertical-align: middle;">Bookmarklets</span>
-			</a>
-		</h1>
-		<nav>
-			<a href="#">Home</a>
-			<a href="pages/notes.html">Notes</a>
-			<a href="https://github.com/humodz/bookmarklets" target="_blank">
-				<svg class="icon" viewBox="0 0 32 32"><path d="M16 0.395c-8.836 0-16 7.163-16 16 0 7.069 4.585 13.067 10.942 15.182 0.8 0.148 1.094-0.347 1.094-0.77 0-0.381-0.015-1.642-0.022-2.979-4.452 0.968-5.391-1.888-5.391-1.888-0.728-1.849-1.776-2.341-1.776-2.341-1.452-0.993 0.11-0.973 0.11-0.973 1.606 0.113 2.452 1.649 2.452 1.649 1.427 2.446 3.743 1.739 4.656 1.33 0.143-1.034 0.558-1.74 1.016-2.14-3.554-0.404-7.29-1.777-7.29-7.907 0-1.747 0.625-3.174 1.649-4.295-0.166-0.403-0.714-2.030 0.155-4.234 0 0 1.344-0.43 4.401 1.64 1.276-0.355 2.645-0.532 4.005-0.539 1.359 0.006 2.729 0.184 4.008 0.539 3.054-2.070 4.395-1.64 4.395-1.64 0.871 2.204 0.323 3.831 0.157 4.234 1.026 1.12 1.647 2.548 1.647 4.295 0 6.145-3.743 7.498-7.306 7.895 0.574 0.497 1.085 1.47 1.085 2.963 0 2.141-0.019 3.864-0.019 4.391 0 0.426 0.288 0.925 1.099 0.768 6.354-2.118 10.933-8.113 10.933-15.18 0-8.837-7.164-16-16-16z"></path></svg>
-				Github
-			</a>
-		</nav>
-	</header>
+  <header>
+    <h1>
+      <a href="#">
+        <img src="favicon.png" alt="" style="height: 0.9em; vertical-align: middle">
+        <span style="vertical-align: middle;">Bookmarklets</span>
+      </a>
+    </h1>
+    <nav>
+      <a href="#">Home</a>
+      <a href="pages/notes.html">Notes</a>
+      <a href="https://github.com/humodz/bookmarklets" target="_blank">
+        <svg class="icon" viewBox="0 0 32 32"><path d="M16 0.395c-8.836 0-16 7.163-16 16 0 7.069 4.585 13.067 10.942 15.182 0.8 0.148 1.094-0.347 1.094-0.77 0-0.381-0.015-1.642-0.022-2.979-4.452 0.968-5.391-1.888-5.391-1.888-0.728-1.849-1.776-2.341-1.776-2.341-1.452-0.993 0.11-0.973 0.11-0.973 1.606 0.113 2.452 1.649 2.452 1.649 1.427 2.446 3.743 1.739 4.656 1.33 0.143-1.034 0.558-1.74 1.016-2.14-3.554-0.404-7.29-1.777-7.29-7.907 0-1.747 0.625-3.174 1.649-4.295-0.166-0.403-0.714-2.030 0.155-4.234 0 0 1.344-0.43 4.401 1.64 1.276-0.355 2.645-0.532 4.005-0.539 1.359 0.006 2.729 0.184 4.008 0.539 3.054-2.070 4.395-1.64 4.395-1.64 0.871 2.204 0.323 3.831 0.157 4.234 1.026 1.12 1.647 2.548 1.647 4.295 0 6.145-3.743 7.498-7.306 7.895 0.574 0.497 1.085 1.47 1.085 2.963 0 2.141-0.019 3.864-0.019 4.391 0 0.426 0.288 0.925 1.099 0.768 6.354-2.118 10.933-8.113 10.933-15.18 0-8.837-7.164-16-16-16z"></path></svg>
+        Github
+      </a>
+    </nav>
+  </header>
 
-	<main>
-		<button
-			style="position: fixed; bottom: -0.75rem; right: 10%"
-			onclick="window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })"
-		>
-			Back to Top
-		</button>
+  <main>
+    <button
+      style="position: fixed; bottom: -0.75rem; right: 10%"
+      onclick="window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })"
+    >
+      Back to Top
+    </button>
 
-		<details>
-			<summary>Index</summary>
-			<p>Drag these to your bookmarks toolbar</p>
-			<ul id="index-list"></ul>
-		</details>
+    <details>
+      <summary>Index</summary>
+      <p>Drag these to your bookmarks toolbar</p>
+      <ul id="index-list"></ul>
+    </details>
 
-		<blockquote>
-			<strong>What do bookmarklets do?</strong>
-			<p>
-				A bookmarklet is a "one-click" tool which adds functionality to the
-				browser, such as modifying the appearance of a web page, querying a
-				search engine with search terms provided by previously selected text,
-				or submitting the current page to a translation or blogging service.
-			</p>
+    <blockquote>
+      <strong>What do bookmarklets do?</strong>
+      <p>
+        A bookmarklet is a "one-click" tool which adds functionality to the
+        browser, such as modifying the appearance of a web page, querying a
+        search engine with search terms provided by previously selected text,
+        or submitting the current page to a translation or blogging service.
+      </p>
 
-			<cite>
-				- <a data-content="href" href="https://support.mozilla.org/en-US/kb/bookmarklets-perform-common-web-page-tasks"></a>
-			</cite>
-		</blockquote>
+      <cite>
+        - <a data-content="href" href="https://support.mozilla.org/en-US/kb/bookmarklets-perform-common-web-page-tasks"></a>
+      </cite>
+    </blockquote>
 
 
-		<h3><a data-src="bookmarklets/hello.js">Hello World</a></h3>
-		<p>
-			Click the link above to try it out!
-		</p>
-		<p>
-			Drag the link into your bookmarks bar to save it, then you'll be able to run it on any website.
-		</p>
+    <h3><a data-src="bookmarklets/hello.js">Hello World</a></h3>
+    <p>
+      Click the link above to try it out!
+    </p>
+    <p>
+      Drag the link into your bookmarks bar to save it, then you'll be able to run it on any website.
+    </p>
 
-		<h3><a data-src="bookmarklets/confetti.js">Confetti</a></h3>
-		<p>
-			Throws some confetti.
-		</p>
+    <h3><a data-src="bookmarklets/confetti.js">Confetti</a></h3>
+    <p>
+      Throws some confetti.
+    </p>
 
-		<h3><a data-src="bookmarklets/show-passwords.js">Show Passwords</a></h3>
-		<p>
-			Displays the contents of password fields. Run again to hide them back.
-		</p>
-		<p>
-			<input type="password" value="hunter2">
-		</p>
+    <h3><a data-src="bookmarklets/show-passwords.js">Show Passwords</a></h3>
+    <p>
+      Displays the contents of password fields. Run again to hide them back.
+    </p>
+    <p>
+      <input type="password" value="hunter2">
+    </p>
 
-		<h3><a data-src="bookmarklets/highlight-duplicate-ids.js">Highlight Duplicate Ids</a></h3>
-		<p>
-			Highlights elements with the same id. Also logs them to the DevTools console.
-		</p>
-		<p>
-			These two elements have the same id: <strong id="dup">First</strong> <em id="dup">Second</em>
-		</p>
+    <h3><a data-src="bookmarklets/highlight-duplicate-ids.js">Highlight Duplicate Ids</a></h3>
+    <p>
+      Highlights elements with the same id. Also logs them to the DevTools console.
+    </p>
+    <p>
+      These two elements have the same id: <strong id="dup">First</strong> <em id="dup">Second</em>
+    </p>
 
-		<h3><a data-src="bookmarklets/gitlab-merge-requests.js">GitLab Merge Requests</a></h3>
-		<p>
-			Lists merge requests for your starred projects.
-		</p>
-		<p>
-			Updates the page automatically every minute and
-			sends a notification when there are new changes.
-		</p>
-		<p>
+    <h3><a data-src="bookmarklets/gitlab-merge-requests.js">GitLab Merge Requests</a></h3>
+    <p>
+      Lists merge requests for your starred projects.
+    </p>
+    <p>
+      Updates the page automatically every minute and
+      sends a notification when there are new changes.
+    </p>
+    <p>
       <a href="pages/gitlab-merge-requests.html">
         Usage instructions can be found here.
       </a>
     </p>
 
-		<h3><a data-src="bookmarklets/gitlab-run-pipeline.js">GitLab Run Pipeline</a></h3>
-		<p>
-			Runs pipelines in the current project. If the current page is a merge request, then the
-			merge request's branch is the one to be executed, otherwise the branch must be provided.
-		</p>
+    <h3><a data-src="bookmarklets/gitlab-deployments.js">GitLab Deployments</a></h3>
+    <p>
+      Better view of deployments in GitLab's Pipelines page.
+    </p>
 
-		<h3><a data-src="bookmarklets/copy-cognito-access-token.js">Copy AWS Cognito Access Token</a></h3>
-		<p>
-			Copies to the clipboard the Cognito access token used by the current page.
-		</p>
+    <h3><a data-src="bookmarklets/gitlab-run-pipeline.js">GitLab Run Pipeline</a></h3>
+    <p>
+      Runs pipelines in the current project. If the current page is a merge request, then the
+      merge request's branch is the one to be executed, otherwise the branch must be provided.
+    </p>
 
-		<!--
-		<h3><a data-src="bookmarklets/.js"></a></h3>
-		<p>
+    <h3><a data-src="bookmarklets/copy-cognito-access-token.js">Copy AWS Cognito Access Token</a></h3>
+    <p>
+      Copies to the clipboard the Cognito access token used by the current page.
+    </p>
 
-		</p>
-		-->
+    <!--
+    <h3><a data-src="bookmarklets/.js"></a></h3>
+    <p>
 
-	</main>
+    </p>
+    -->
 
-	<footer></footer>
+  </main>
 
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/minify.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/utils.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/ast.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/parse.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/transform.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/scope.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/output.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/compress.js"></script>
-	<script src="https://unpkg.com/uglify-js@3.17.0/lib/propmangle.js"></script>
+  <footer></footer>
 
-	<script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/minify.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/utils.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/ast.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/parse.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/transform.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/scope.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/output.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/compress.js"></script>
+  <script src="https://unpkg.com/uglify-js@3.17.0/lib/propmangle.js"></script>
 
-		const $$ = (s, e = document) => [...e.querySelectorAll(s)];
+  <script>
 
-		const listItemPromises = $$('a[data-src]').map(async anchor => {
-			const src = anchor.getAttribute('data-src');
-			const script = await fetch(src).then(res => res.text());
-			const minified = minify(script);
+    const $$ = (s, e = document) => [...e.querySelectorAll(s)];
 
-			if (minified.error) {
-				console.log(minified.error);
-			} else {
-				anchor.href = `javascript:(()=>{ ${minified.code} })()`;
-			}
+    const listItemPromises = $$('a[data-src]').map(async anchor => {
+      const src = anchor.getAttribute('data-src') + `?t=${Date.now()}`;
+      const script = await fetch(src).then(res => res.text());
+      const minified = minify(script);
 
-			const listItem = document.createElement('li');
-			listItem.append(anchor.cloneNode(true));
-			return listItem;
-		});
+      if (minified.error) {
+        console.log(minified.error);
+      } else {
+        anchor.href = `javascript:(()=>{ ${minified.code} })()`;
+      }
 
-		Promise.all(listItemPromises).then(listItems => {
-			const indexList = document.querySelector('#index-list');
-			indexList.append(...listItems);
-		});
+      const listItem = document.createElement('li');
+      listItem.append(anchor.cloneNode(true));
+      return listItem;
+    });
 
-		document.querySelectorAll('[data-content]').forEach(element => {
-			const attribute = element.getAttribute('data-content');
-			const content = element.getAttribute(attribute);
-			element.textContent = content;
-		});
-	</script>
+    Promise.all(listItemPromises).then(listItems => {
+      const indexList = document.querySelector('#index-list');
+      indexList.append(...listItems);
+    });
+
+    document.querySelectorAll('[data-content]').forEach(element => {
+      const attribute = element.getAttribute('data-content');
+      const content = element.getAttribute(attribute);
+      element.textContent = content;
+    });
+  </script>
 </body>
 </html>

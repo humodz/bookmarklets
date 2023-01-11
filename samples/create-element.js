@@ -1,9 +1,11 @@
-function h(tag, attributes = {}, children = []) {
+function h(tag, attributes, ...children) {
   const element = document.createElement(tag);
 
-  for (const [name, value] of Object.entries(attributes)) {
+  for (const [name, value] of Object.entries(attributes || {})) {
     if (name.startsWith('on')) {
       element.addEventListener(name.replace(/^on/, ''), value);
+    } else if (name === 'style') {
+      Object.assign(element.style, value);
     } else if (name in element) {
       if (value !== null && value !== undefined) {
         element[name] = value;
@@ -13,13 +15,12 @@ function h(tag, attributes = {}, children = []) {
     }
   }
 
-  if (!Array.isArray(children)) {
-    children = [children];
-  }
-
-  for (const child of children) {
-    if (child !== null && child !== undefined && child !== false) {
+  for (const child of children.flat()) {
+    if (child && typeof child === 'object' && !Array.isArray(child)) {
       element.append(child);
+    } else if (child !== null && child !== undefined) {
+      const node = document.createTextNode(child);
+      element.append(node);
     }
   }
 

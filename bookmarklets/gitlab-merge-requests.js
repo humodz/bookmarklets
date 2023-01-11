@@ -1,5 +1,10 @@
 javascript:
 (async () => {
+  if (location.hostname !== 'gitlab.com' ) {
+    alert('ERROR\nThis bookmarklet can only be used in GitLab');
+    return;
+  }
+
 	Notification.requestPermission();
 
 	const $ = (s, e = document) => e.querySelector(s);
