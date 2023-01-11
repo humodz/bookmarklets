@@ -158,6 +158,9 @@ javascript:(() => {
     content,
   );
 
+  // TODO - this is doing an unnecessary request
+  // TODO add rewriteUrl
+  // TODO move onSend to onLoad
   xhrInterceptor({
     shouldIntercept: (method, url) => (
       method.toUpperCase() === 'GET' &&
