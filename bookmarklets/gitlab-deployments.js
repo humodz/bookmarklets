@@ -52,7 +52,7 @@ javascript:(() => {
 
     XMLHttpRequest.prototype.open = function(...args) {
       if (shouldIntercept(...args)) {
-        this.send = () => {
+        this.send = function () {
           const asyncSend = async () => {
             await new Promise(ok => setTimeout(ok));
             const res = await onSend(this, ...args);
@@ -74,7 +74,7 @@ javascript:(() => {
               },
             });
 
-            XMLHttpRequest.prototype.send.apply(this);
+            XMLHttpRequest.prototype.send.apply(this, args);
           }
 
           asyncSend().catch(console.error);
@@ -147,7 +147,7 @@ javascript:(() => {
         h(
           'label',
           { for: id, class: 'ml-3 flex-grow' },
-          'Only show most recent successful deploy per env',
+          'Only show latest successful deploy per environment',
         ),
         h('button', {
           onclick: refresh,
@@ -161,6 +161,7 @@ javascript:(() => {
   // TODO - this is doing an unnecessary request
   // TODO add rewriteUrl
   // TODO move onSend to onLoad
+  // TODO onOpen
   xhrInterceptor({
     shouldIntercept: (method, url) => (
       method.toUpperCase() === 'GET' &&
