@@ -182,6 +182,7 @@ javascript:(() => {
               return false;
             }
             const wanted = !(onlyShowLastDeploy && seenDeploys.has(stage.name));
+            // TODO only do this if the pipeline was successful
             seenDeploys.add(stage.name);
             return wanted;
           }
