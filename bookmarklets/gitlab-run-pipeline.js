@@ -33,10 +33,10 @@ javascript:
   }
 
   function askForEnvs() {
-    const text = prompt('Please provide env variables separated by comma.\n\nExample:\n    env=dev');
+    const text = prompt('Please provide env variables separated by ;;.\n\nExample:\n    env=dev');
 
     return text
-      .split(',')
+      .split(';;')
       .filter(Boolean)
       .map(pair => {
         const firstEquals = pair.indexOf('=');
