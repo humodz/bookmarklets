@@ -39,6 +39,34 @@ javascript:(() => {
     return Array(n).fill(0).map((_, i) => i);
   }
 
+  function localStorageItem(key, initialValue) {
+    if (localStorage.getItem(key) === null) {
+      localStorage.setItem(key, JSON.stringify(initialValue));
+    }
+
+    return {
+      clear() {
+        localStorage.removeItem(key);
+      },
+      set(newValue) {
+        localStorage.setItem(key, JSON.stringify(newValue));
+      },
+      get() {
+        const value = localStorage.getItem(key);
+
+        if (value === null) {
+          return null;
+        }
+
+        try {
+          return JSON.parse(value);
+        } catch {
+          return null;
+        }
+      },
+    }
+  }
+
   function addStyle(text) {
     const element = document.createElement('style');
     element.textContent = text;
@@ -87,11 +115,6 @@ javascript:(() => {
 
 
   addStyle(`
-    body {
-      max-width: 1000px;
-      margin: auto;
-    }
-
     [data-testid=mini-pipeline-graph-dropdown] {
         display: flex;
         flex-direction: column;
@@ -106,7 +129,7 @@ javascript:(() => {
         display: block;
         visibility: hidden;
         font-weight: bold;
-        content: ".";
+        content: "!!!";
     }
 
     [aria-label*=deploy]::before {
@@ -134,16 +157,21 @@ javascript:(() => {
     }
   `);
 
-  const content = $('.content-list.pipelines');
-  let onlyShowLastDeployInput;
-  document.body.innerHTML = '';
-
+  const pipelinesTable = $('.content-list.pipelines');
   const id = Math.random().toString();
-  document.body.append(
+  const onlyShowLastDeploy = localStorageItem('onlyShowLastDeploy', true);
+
+  $('#content-body').innerHTML = '';
+  $('#content-body').append(
     h('h2', { class: 'mx-3' }, document.title),
     h('div', { class: 'mx-2 user-select-none' }, [
       h('p', { class: 'flex align-items-baseline' }, [
-        onlyShowLastDeployInput = h('input', { type: 'checkbox', id }),
+        h('input', {
+          type: 'checkbox',
+          id,
+          checked: onlyShowLastDeploy.get(),
+          onchange: event => onlyShowLastDeploy.set(event.target.checked),
+        }),
         h(
           'label',
           { for: id, class: 'ml-3 flex-grow' },
@@ -155,36 +183,46 @@ javascript:(() => {
         }, 'Refresh')
       ]),
     ]),
-    content,
+    pipelinesTable,
   );
 
-  // TODO - this is doing an unnecessary request
-  // TODO add rewriteUrl
-  // TODO move onSend to onLoad
-  // TODO onOpen
   xhrInterceptor({
     shouldIntercept: (method, url) => (
       method.toUpperCase() === 'GET' &&
       url.includes('pipelines.json')
     ),
     onSend: async (_xhr, _method, path) => {
+      const perPage = 100;
+      const pagesBatchSize = onlyShowLastDeploy.get() ? 5 : 1;
+
       const url = new URL(path, location.origin);
-      url.searchParams.set('per_page', '100');
+      url.searchParams.set('per_page', perPage.toString());
 
-      const response = await fetch(url).then(res => res.json());
+      const page = Number(url.searchParams.get('page') || '1');
 
-      const onlyShowLastDeploy = onlyShowLastDeployInput.checked;
+      const urls = range(pagesBatchSize).map(i => {
+        url.searchParams.set('page', 1 + (page - 1) * pagesBatchSize + i);
+        return url.toString();
+      });
+
+      const promises = urls.map(url => fetch(url).then(res => res.json()));
+      const responses = await Promise.all(promises);
+
+      const allPipelines = responses.flatMap(it => it.pipelines);
+
       const seenDeploys = new Set();
 
-      const wantedPipelines = response.pipelines.filter(
+      const wantedPipelines = allPipelines.filter(
         pipeline => pipeline.details.stages.some(
           stage => {
             if (!stage.name.startsWith('deploy')) {
               return false;
             }
-            const wanted = !(onlyShowLastDeploy && seenDeploys.has(stage.name));
-            // TODO only do this if the pipeline was successful
-            seenDeploys.add(stage.name);
+            const wanted = !(onlyShowLastDeploy.get() && seenDeploys.has(stage.name));
+
+            if (stage.status.group === 'success') {
+              seenDeploys.add(stage.name);
+            }
             return wanted;
           }
         )
