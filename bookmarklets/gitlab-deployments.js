@@ -80,7 +80,7 @@ javascript:(() => {
 
     XMLHttpRequest.prototype.open = function(...args) {
       if (shouldIntercept(...args)) {
-        this.send = function () {
+        this.send = function (...sendArgs) {
           const asyncSend = async () => {
             await new Promise(ok => setTimeout(ok));
             const res = await onSend(this, ...args);
@@ -102,7 +102,7 @@ javascript:(() => {
               },
             });
 
-            XMLHttpRequest.prototype.send.apply(this, args);
+            XMLHttpRequest.prototype.send.apply(this, sendArgs);
           }
 
           asyncSend().catch(console.error);
@@ -139,21 +139,37 @@ javascript:(() => {
     [aria-label*="deployDev:"]::before {
         content: "DEV";
     }
-
     [aria-label*="deployQa:"]::before {
         content: "QA";
     }
-
     [aria-label*="deployQa2:"]::before {
         content: "QA2";
     }
-
     [aria-label*="deployStaging:"]::before {
         content: "STG";
     }
-
     [aria-label*="deployProd:"]::before {
         content: "PRD";
+    }
+
+    .ci-table tr {
+      border-left: 0.5rem solid transparent;
+    }
+
+    .ci-table tr:has([aria-label*="deployDev:"]) {
+      border-left-color: dodgerblue;
+    }
+    .ci-table tr:has([aria-label*="deployQa:"]) {
+      border-left-color: yellow;
+    }
+    .ci-table tr:has([aria-label*="deployQa2:"]) {
+      border-left-color: yellow;
+    }
+    .ci-table tr:has([aria-label*="deployStaging:"]) {
+      border-left-color: orange;
+    }
+    .ci-table tr:has([aria-label*="deployProd:"]) {
+      border-left-color: red;
     }
   `);
 
@@ -163,7 +179,7 @@ javascript:(() => {
 
   $('#content-body').innerHTML = '';
   $('#content-body').append(
-    h('h2', { class: 'mx-3' }, document.title),
+    h('br'),
     h('div', { class: 'mx-2 user-select-none' }, [
       h('p', { class: 'flex align-items-baseline' }, [
         h('input', {
