@@ -1,5 +1,5 @@
 javascript: (() => {
-  const pathRegExp = /[/]-[/]merge_requests[/]\d+([/]edit)?$/;
+  const pathRegExp = /[/]-[/]merge_requests[/](\d+([/]edit)?|(new))$/;
 
   if (
     location.hostname !== 'gitlab.com' ||
@@ -31,20 +31,24 @@ javascript: (() => {
   }
 
   const url = new URL(location);
-  url.pathname = url.pathname.replace(pathRegExp, `/pipelines`);
+  url.pathname = url.pathname.replace(pathRegExp, `/pipelines/new`);
 
-  const isEdit = location.pathname.match(pathRegExp)[1] !== undefined;
+  const match = location.pathname.match(pathRegExp);
+  const isEditOrNew = match[2] || match[3];
 
-  if (isEdit) {
+  if (isEditOrNew) {
     const branchName = $('.branch-selector code').textContent.trim();
     url.searchParams.set('ref', branchName);
 
     const link = document.createElement('a');
     link.target = '_blank';
     link.href = url.toString();
-    link.textContent = `Deploy ${branchName}`;
 
-    $('#merge_request_description').value += '\n\n' + link.outerHTML;
+    const strong = document.createElement('strong');
+    strong.textContent = `Deploy ${branchName}`;
+    link.append(strong)
+
+    $('#merge_request_description').value += '\n' + link.outerHTML;
   } else {
     const branchName = $('.detail-page-description a[href*=tree]').title;
     url.searchParams.set('ref', branchName);
