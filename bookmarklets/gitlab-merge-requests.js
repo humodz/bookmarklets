@@ -340,9 +340,9 @@ javascript:
         return {
           title,
           href: titleElem.href,
-          approved: !!$('[data-testid=approval-solid-icon]', element),
+          approved: null !== $('[data-testid=approval-solid-icon]', element),
           isDraft: title.startsWith('Draft:'),
-          mergeConflict: !!$('[data-testid=warning-solid-icon]', element),
+          mergeConflict: null !== $('[data-testid=warning-solid-icon]', element),
           lastUpdated: $('.merge_request_updated_ago', element).getAttribute('datetime'),
           pipelineStatus: pipelineStatuses.find(it => !!$(it.selector, element))?.value || 'none',
           comments: parseInt($('[data-testid=issuable-comments]', element).textContent.trim()),
