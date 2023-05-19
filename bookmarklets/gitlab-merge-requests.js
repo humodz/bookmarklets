@@ -9,56 +9,50 @@ javascript:
 
   const $ = (s, e = document) => e.querySelector(s);
   const $$ = (s, e = document) => [...e.querySelectorAll(s)];
-  const parser = new DOMParser();
-
-  function h(tag, attrs, ...children) {
-    const element = document.createElement(tag);
-
-    for (const [name, value] of Object.entries(attrs || {})) {
-      if (name === 'style') {
-        Object.assign(element.style, value);
-      } else if (name in element) {
-        element[name] = value;
-      } else {
-        element.setAttribute(name, value);
-      }
-    }
-
-    for (const child of children.flat()) {
-      if (child && typeof child === 'object' && !Array.isArray(child)) {
-        element.append(child);
-      } else if (child !== null && child !== undefined) {
-        const node = document.createTextNode(child);
-        element.append(node);
-      }
-    }
-
-    return element;
-  }
-
-  async function fetchDom(url) {
-    const html = await fetch(url).then(res => res.text());
-    return parser.parseFromString(html, 'text/html');
-  }
-
-  async function getMergeRequests(url) {
-    const dom = await fetchDom(url + '/-/merge_requests');
-
-    if ($('.empty-state', dom)) {
-      return null;
-    }
-
-    const elem = $('.mr-list', dom);
-    return elem;
-  }
 
   let oldMrInfos = [];
 
-  const Link = (href, content) =>
-    h('a', { href, target: '_blank', style: { color: '#ececef' } }, content);
+  const classes = {
+    collapsed: 'bookmarklet-collapsed',
+    projectHeader: 'bookmarklet-project-header',
+    collapseExpand: 'bookmarklet-collapse-expand',
+  }
+
+  addStyle('bookmarklet-gitlab-merge-requests', `
+    .${classes.collapsed} + * {
+      display: none !important;
+    }
+
+    .${classes.projectHeader} {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .${classes.projectHeader} > * {
+      margin-right: 1rem;
+    }
+
+    .${classes.projectHeader} > :first-child {
+      margin-right: auto;
+    }
+
+    .${classes.projectHeader} a {
+      color: #ececef;
+    }
+
+    .${classes.collapseExpand}::before {
+      content: "[Collapse]";
+    }
+
+    .${classes.collapsed} .${classes.collapseExpand}::before {
+      content: "[Expand]";
+    }
+  `);
 
   async function updateMergeRequestList(first = false) {
     console.log('Updating merge requests...', new Date().toTimeString());
+    const state = getState();
+
     const projectUrls = (await getStarredProjects()).map(it => it.web_url);
 
     const mrsByProject = await Promise.all(
@@ -72,10 +66,9 @@ javascript:
       contentBody.append(
         h('h4', { style: { textAlign: 'center' }},
           'Note: only the merge requests of your first 100 starred projects are shown.'
-        ),''
+        )
       );
     }
-
 
     for (const [url, mrs] of mrsByProject) {
       if (mrs) {
@@ -83,10 +76,34 @@ javascript:
 
         contentBody.append(
           h('br'),
-          h('h5', null, [
+          h('h5', {
+            class: {
+              [classes.projectHeader]: true,
+              [classes.collapsed]: state.projectCollapsed[url],
+            }
+          }, [
             Link(url, getProjectName(url)),
-            h('span', { style: { marginLeft: '2rem' }}),
+            h('a', {
+              href: '#',
+              class: classes.collapseExpand,
+              onclick: (e) => {
+                e.target.parentElement.classList.toggle(classes.collapsed)
+                state.projectCollapsed[url] = !state.projectCollapsed[url];
+                persistState(state);
+              },
+            }, ''),
             Link(url + '/-/pipelines', '[Pipelines]'),
+            h('label', null, [
+              h('input', {
+                type: 'checkbox',
+                checked: !state.projectNotificationsDisabled[url],
+                onchange: (e) => {
+                  state.projectNotificationsDisabled[url] = e.target.checked;
+                  persistState(state);
+                },
+              }),
+              ' Notifications',
+            ]),
           ]),
           mrs,
         );
@@ -111,23 +128,33 @@ javascript:
       const interestingChanges = filterInterestingChanges(changes, myself);
 
       for (const change of interestingChanges) {
-        notify(change);
+        if (!state.projectNotificationsDisabled[change.mr.project.url]) {
+          notify(change);
+        }
       }
     }
 
     oldMrInfos = newMrInfos;
   }
 
-  function getProjectName(mrUrl) {
-    return new URL(mrUrl)
-      .pathname
-      .split('/-')[0]
-      .replace(/^[/]/g, '')
-      .replace(/[/]/g, ' / ');
+  function getState() {
+    let savedState = {};
+
+    try {
+      savedState = JSON.parse(localStorage.getItem('bookmarklet-merge-requests-state'));
+    } finally {
+      return {
+        projectNotificationsDisabled: {},
+        projectCollapsed: {},
+        ...savedState,
+      };
+    }
   }
 
-  function getProjectUrl(mrUrl) {
-    return mrUrl.replace(/[/]-[/].*$/, '');
+  window.BKM_getState = getState;
+
+  function persistState(state) {
+    localStorage.setItem('bookmarklet-merge-requests-state', JSON.stringify(state));
   }
 
   function diff(oldMrInfos, newMrInfos) {
@@ -264,6 +291,17 @@ javascript:
     return 'https://humodz.github.io/bookmarklets/icons/' + name + '.png';
   }
 
+  async function getMergeRequests(url) {
+    const dom = await fetchDom(url + '/-/merge_requests');
+
+    if ($('.empty-state', dom)) {
+      return null;
+    }
+
+    const elem = $('.mr-list', dom);
+    return elem;
+  }
+
   async function getCurrentUser() {
     return await fetch('/api/v4/user').then(res => res.json());
   }
@@ -271,7 +309,11 @@ javascript:
   async function getStarredProjects() {
     const user = await getCurrentUser();
     const url = `/api/v4/users/${user.id}/starred_projects?simple=true&order_by=name&per_page=100`;
-    return await fetch(url).then(res => res.json());
+    const projects = await fetch(url).then(res => res.json());
+
+    return projects.sort(
+      (p1, p2) => p1.name_with_namespace.localeCompare(p2.name_with_namespace)
+    );
   }
 
   function getUserAvatar(userId, size = 64) {
@@ -306,6 +348,7 @@ javascript:
           comments: parseInt($('[data-testid=issuable-comments]', element).textContent.trim()),
           project: {
             name: getProjectName(titleElem.href),
+            url: getProjectUrl(titleElem.href),
           },
           author: {
             name: authorElem.getAttribute('data-name'),
@@ -317,6 +360,67 @@ javascript:
           },
         };
       });
+  }
+
+  function getProjectName(mrUrl) {
+    return new URL(mrUrl)
+      .pathname
+      .split('/-')[0]
+      .replace(/^[/]/g, '')
+      .replace(/[/]/g, ' / ');
+  }
+
+  function getProjectUrl(mrUrl) {
+    return mrUrl.replace(/[/]-[/].*$/, '');
+  }
+
+  const Link = (href, content) =>
+    h('a', { href, target: '_blank' }, content);
+
+  function h(tag, attrs, ...children) {
+    const element = document.createElement(tag);
+
+    for (const [name, value] of Object.entries(attrs || {})) {
+      if (name === 'class') {
+        if (typeof value === 'object') {
+          element.className = Object.keys(value).filter(cls => value[cls]).join(' ');
+        } else {
+          element.className = value;
+        }
+      }
+      else if (name === 'style') {
+        Object.assign(element.style, value);
+      } else if (name in element) {
+        element[name] = value;
+      } else {
+        element.setAttribute(name, value);
+      }
+    }
+
+    for (const child of children.flat()) {
+      if (child && typeof child === 'object' && !Array.isArray(child)) {
+        element.append(child);
+      } else if (child !== null && child !== undefined) {
+        const node = document.createTextNode(child);
+        element.append(node);
+      }
+    }
+
+    return element;
+  }
+
+  const parser = new DOMParser();
+
+  async function fetchDom(url) {
+    const html = await fetch(url).then(res => res.text());
+    return parser.parseFromString(html, 'text/html');
+  }
+
+  function addStyle(id, css) {
+    const style = document.querySelector(`#${id}`) || document.createElement('style');
+    style.id = id;
+    style.textContent = css;
+    document.body.append(style);
   }
 
   const interval = '__BOOKMARKET_INTERVAL_ID__';
