@@ -10,8 +10,6 @@ javascript:
   const $ = (s, e = document) => e.querySelector(s);
   const $$ = (s, e = document) => [...e.querySelectorAll(s)];
 
-  let oldMrInfos = [];
-
   const classes = {
     collapsed: 'bookmarklet-collapsed',
     projectHeader: 'bookmarklet-project-header',
@@ -49,20 +47,29 @@ javascript:
     }
   `);
 
+  const myself = await getCurrentUser();
+
+  let lastUpdatedAt = new Date();
+  // let lastUpdatedAt = new Date() - 1000 * 60 * 60 * 24 * 5;
+  let oldMrInfos = [];
+
   async function updateMergeRequestList(first = false) {
     console.log('Updating merge requests...', new Date().toTimeString());
     const state = getState();
 
-    const projectUrls = (await getStarredProjects()).map(it => it.web_url);
+    const projects = await getStarredProjects();
 
     const mrsByProject = await Promise.all(
-      projectUrls.map(async url => [url, await getMergeRequests(url)])
+      projects.map(async p => [
+        p.webUrl,
+        { project: p, mrs: await getMergeRequests(p.webUrl) }
+      ])
     );
 
     $('#content-body').innerHTML = '';
     const contentBody = $('#content-body');
 
-    if (projectUrls.length === 100) {
+    if (projects.length === 100) {
       contentBody.append(
         h('h4', { style: { textAlign: 'center' }},
           'Note: only the merge requests of your first 100 starred projects are shown.'
@@ -70,7 +77,7 @@ javascript:
       );
     }
 
-    for (const [url, mrs] of mrsByProject) {
+    for (const [url, { project, mrs }] of mrsByProject) {
       if (mrs) {
         $$('a', mrs).forEach(anchor => anchor.target = '_blank');
 
@@ -82,7 +89,7 @@ javascript:
               [classes.collapsed]: state.projectCollapsed[url],
             }
           }, [
-            Link(url, getProjectName(url)),
+            h('a', { target: '_blank', href: url }, project.nameWithNamespace),
             h('a', {
               href: '#',
               class: classes.collapseExpand,
@@ -92,7 +99,7 @@ javascript:
                 persistState(state);
               },
             }, ''),
-            Link(url + '/-/pipelines', '[Pipelines]'),
+            h('a', { target: '_blank', href: url + '/-/pipelines' }, '[Pipelines]'),
             h('label', null, [
               h('input', {
                 type: 'checkbox',
@@ -121,20 +128,37 @@ javascript:
     }
 
     if (!first) {
-      // TODO notify on merge or close?
-      const myself = await getCurrentUser();
-      const { changes } = diff(oldMrInfos, newMrInfos);
+      const events = await getProjectsEvents(projects, lastUpdatedAt);
+      console.log(events);
 
-      const interestingChanges = filterInterestingChanges(changes, myself);
-
-      for (const change of interestingChanges) {
-        if (!state.projectNotificationsDisabled[change.mr.project.url]) {
-          notify(change);
+      for (const event of events) {
+        if (!state.projectNotificationsDisabled[event.project.url]) {
+          notify(event);
         }
       }
     }
 
     oldMrInfos = newMrInfos;
+    lastUpdatedAt = new Date();
+  }
+
+  function notify(event) {
+    const action = event.action_name !== 'accepted' ? event.action_name : 'merged';
+
+    const notification = new Notification(`${event.author.name} ${action}`, {
+      icon: event.author.avatar_url,
+      body: [
+        event.mergeRequest?.title ?? 'Unknown Merge Request',
+        `in ${event.project.shortName}`,
+      ].join('\n'),
+    });
+
+    notification.addEventListener('click', () => {
+      const url = event.mergeRequest?.webUrl;
+      if (url) {
+        window.open(url, '_blank').focus();
+      }
+    });
   }
 
   function getState() {
@@ -151,144 +175,8 @@ javascript:
     }
   }
 
-  window.BKM_getState = getState;
-
   function persistState(state) {
     localStorage.setItem('bookmarklet-merge-requests-state', JSON.stringify(state));
-  }
-
-  function diff(oldMrInfos, newMrInfos) {
-    const changes = [];
-
-    for (const mr of newMrInfos) {
-      const oldMr = oldMrInfos.find(it => it.href === mr.href);
-
-      if (!oldMr) {
-        changes.push({ type: 'created', mr });
-        continue;
-      }
-
-      if (mr.lastUpdated !== oldMr.lastUpdated) {
-        changes.push({ type: 'updated', mr });
-      }
-
-      if (mr.approved && !oldMr.approved) {
-        changes.push({ type: 'approved', mr });
-      }
-
-      if (!mr.approved && oldMr.approved) {
-        changes.push({ type: 'approval-revoked', mr });
-      }
-
-      if (mr.pipelineStatus !== oldMr.pipelineStatus) {
-        changes.push({ type: 'pipeline-changed', mr });
-      }
-
-      if (mr.mergeConflict && !oldMr.mergeConflict) {
-        changes.push({ type: 'merge-conflict', mr });
-      }
-
-      if (!mr.isDraft && oldMr.isDraft) {
-        changes.push({ type: 'ready-for-review', mr });
-      }
-
-      if (mr.comments > oldMr.comments) {
-        changes.push({
-          type: 'new-comments',
-          delta: mr.comments - oldMr.comments,
-          mr
-        });
-      }
-    }
-
-    const newMrHrefs = newMrInfos.map(it => it.href);
-    const deletedMrs = oldMrInfos.filter(it => !newMrHrefs.includes(it.href));
-
-    return { changes, deletedMrs };
-  }
-
-  function filterInterestingChanges(changes, myself) {
-    const interestingChanges = changes.filter(change => {
-      const createdOrUpdatedByMe = (
-        ['created', 'updated', 'ready-for-review'].includes(change.type) &&
-        change.mr.author.username === myself.username
-      );
-
-      const changesThatCauseUpdate = [
-        'approved',
-        'approval-revoked',
-        'merge-conflict',
-        'ready-for-review',
-        'new-comments',
-      ];
-
-      const duplicateUpdate = change.type === 'updated' && changes.some(otherChange =>
-        otherChange !== change && changesThatCauseUpdate.includes(otherChange.type)
-      );
-
-      return !createdOrUpdatedByMe && !duplicateUpdate;
-    });
-
-    return interestingChanges;
-  }
-
-  function notify(change) {
-    const mr = change.mr;
-
-    const simpleNotifications = {
-      'approved': { msg: 'Approved', icon: 'check-mark-button' },
-      'approval-revoked': { msg: 'Approval revoked', icon: 'thumbs-down' },
-      'merge-conflict': { msg: 'Merge conflict', icon: 'warning' },
-    };
-
-    const authorNotifications = {
-      'created': 'New',
-      'updated': 'Updated',
-      'ready-for-review': 'Ready for review',
-    };
-
-    if (simpleNotifications[change.type]) {
-      const { msg, icon } = simpleNotifications[change.type];
-
-      new Notification(`${msg}: ${mr.title}`, {
-        icon: getIcon(icon),
-        body: `in ${mr.project.name}`,
-      });
-    } else if (authorNotifications[change.type]) {
-      new Notification(`${authorNotifications[change.type]}: ${mr.title}`, {
-        icon: mr.author.avatar,
-        body: [
-          `in ${mr.project.name}`,
-          `by ${mr.author.name}`,
-        ].join('\n'),
-      });
-    } else if (change.type === 'new-comments') {
-      new Notification(`${change.delta} new comment(s): ${mr.title}`, {
-        icon: getIcon('speech-balloon'),
-        body: `in ${mr.project.name}`,
-      });
-    } else if (change.type === 'pipeline-changed') {
-      const icons = {
-        'pending': 'hourglass-done',
-        'passed': 'rocket',
-        'running': 'hammer-and-wrench',
-        'failed': 'fire',
-        'canceled': 'prohibited',
-      };
-
-      if (icons[mr.pipelineStatus]) {
-        new Notification(`CI ${mr.pipelineStatus}: ${mr.title}`, {
-          icon: getIcon(icons[mr.pipelineStatus]),
-          body: `in ${mr.project.name}`,
-        });
-      } else {
-        console.info('Unreported pipeline status:', mr.pipelineStatus, mr);
-      }
-    }
-  }
-
-  function getIcon(name) {
-    return 'https://humodz.github.io/bookmarklets/icons/' + name + '.png';
   }
 
   async function getMergeRequests(url) {
@@ -307,14 +195,156 @@ javascript:
   }
 
   async function getStarredProjects() {
-    const user = await getCurrentUser();
-    const url = `/api/v4/users/${user.id}/starred_projects?simple=true&order_by=name&per_page=100`;
-    const projects = await fetch(url).then(res => res.json());
+    const query = `
+    {
+      currentUser {
+        starredProjects(first: 100) {
+          nodes {
+            id webUrl nameWithNamespace
+            mergeRequests(first: 100, state: opened) {
+              nodes {
+                id title draft webUrl sourceBranch
+              }}}}}
+    }
+    `.replace(/\s+/g, ' ');
 
-    return projects.sort(
-      (p1, p2) => p1.name_with_namespace.localeCompare(p2.name_with_namespace)
+    const params = new URLSearchParams({ query });
+    const url = `/api/graphql?${params}`;
+    const body = await fetch(url).then(r => r.json());
+
+    if (body.errors) {
+      const message = body.errors[0].message ?? 'Unknown error';
+      throw Object.assign(new Error(message), { name: 'GraphQlError', body });
+    }
+
+    const projects = body.data.currentUser.starredProjects.nodes;
+
+    function getId(item) {
+      return Number(item.id.split('/').pop());
+    }
+
+    return projects
+      .map(project => ({
+        ...project,
+        id: getId(project),
+        mergeRequests: project.mergeRequests.nodes.map(mr => ({
+          ...mr,
+          id: getId(mr),
+        })),
+      }))
+      .sort(
+        (p1, p2) => p1.nameWithNamespace.localeCompare(p2.nameWithNamespace)
+      );
+  }
+
+  const Action = {
+    approved: 'approved',
+    closed: 'closed',
+    commented_on: 'commented on',
+    merged: 'accepted',
+    opened: 'opened',
+    pushed_to: 'pushed to',
+    reopened: 'reopened',
+  };
+
+  async function getProjectsEvents(projects, since = new Date()) {
+    console.log({projects});
+
+    const mrsBySourceBranch = mapMergeRequests(projects, mr => mr.sourceBranch);
+    const mrsById = mapMergeRequests(projects, mr => mr.id);
+
+    console.log({mrsBySourceBranch, mrsById});
+
+    const events = await Promise
+      .all(projects.map(p => getProjectEvents(p.webUrl, since)))
+      .then(list => list.flat());
+
+    events.reverse();
+
+    const wantedActions = Object.values(Action);
+
+    const seenEvents = new Set();
+
+    function getEventKey(action, targetId) {
+      return JSON.stringify([action, targetId]);
+    }
+
+    const eventsWithMr = events.map(event => {
+      const key = getEventKey(event.action_name, event.target_id);
+
+      const isDuplicate = seenEvents.has(key);
+      const byMyself = event.author.id === myself.id
+
+      seenEvents.add(key);
+
+      if (event.action_name === Action.reopened) {
+        seenEvents.add(getEventKey([Action.closed, event.target_id]));
+      }
+
+      if ([Action.closed, Action.merged].includes(event.action_name)) {
+        const actionsToIgnore = [
+          Action.approved, Action.commented_on, Action.pushed_to, Action.opened, Action.reopened
+        ];
+
+        for (const action of actionsToIgnore) {
+          seenEvents.add(getEventKey(action, event.target_id));
+        }
+      }
+
+      const mergeRequest =
+        mrsById.get(`${event.project_id}:${event.target_id}`) ??
+        mrsBySourceBranch.get(`${event.project_id}:${event.push_data?.ref}`);
+
+      const wanted = (
+        !!mergeRequest &&
+        !isDuplicate &&
+        !byMyself &&
+        wantedActions.includes(event.action_name) &&
+        !(mergeRequest.draft && event.action_name === Action.pushed_to)
+      );
+
+      return {
+        wanted,
+        event: { ...event, mergeRequest },
+      };
+    });
+
+    return eventsWithMr.filter(it => it.wanted).map(it => it.event);
+  }
+
+  function mapMergeRequests(projects, keyFn) {
+    return new Map(
+      projects
+        .map(
+          p => p.mergeRequests.map(
+            mr => [`${p.id}:${keyFn(mr)}`, mr]
+          )
+        )
+        .flat()
     );
   }
+
+  async function getProjectEvents(projectUrl, since = new Date()) {
+    const date = new Date(since);
+    date.setDate(date.getDate() - 1);
+    const yesterday = date.toISOString().split('T')[0];
+
+    const params = new URLSearchParams({
+      after: yesterday,
+      target: 'merge_request',
+    });
+
+    const project = getProjectInfo(projectUrl);
+    const url = `/api/v4/projects/${project.path}/events?${params}`;
+
+    const events = await fetch(url).then(res => res.json());
+
+    return events
+      .filter(event => new Date(event.created_at) > new Date(since))
+      .map(event => ({ ...event, project }));
+  }
+
+  window.BKM_getProjectEvents = getProjectEvents;
 
   function getUserAvatar(userId, size = 64) {
     return `https://gitlab.com/uploads/-/system/user/avatar/${userId}/avatar.png?width=${size}`;
@@ -346,10 +376,7 @@ javascript:
           lastUpdated: $('.merge_request_updated_ago', element).getAttribute('datetime'),
           pipelineStatus: pipelineStatuses.find(it => !!$(it.selector, element))?.value || 'none',
           comments: parseInt($('[data-testid=issuable-comments]', element).textContent.trim()),
-          project: {
-            name: getProjectName(titleElem.href),
-            url: getProjectUrl(titleElem.href),
-          },
+          project: getProjectInfo(titleElem.href),
           author: {
             name: authorElem.getAttribute('data-name'),
             username: authorElem.getAttribute('data-username'),
@@ -362,20 +389,14 @@ javascript:
       });
   }
 
-  function getProjectName(mrUrl) {
-    return new URL(mrUrl)
-      .pathname
-      .split('/-')[0]
-      .replace(/^[/]/g, '')
-      .replace(/[/]/g, ' / ');
-  }
+  function getProjectInfo(mrUrl) {
+    const url = mrUrl.replace(/[/]-[/].+/, '');
+    const path = new URL(url).pathname.replace('/', '');
+    const name = path.replace(/[/]/g, ' / ');
+    const shortName = path.split('/').pop();
 
-  function getProjectUrl(mrUrl) {
-    return mrUrl.replace(/[/]-[/].*$/, '');
+    return { url, path: encodeURIComponent(path), name, shortName };
   }
-
-  const Link = (href, content) =>
-    h('a', { href, target: '_blank' }, content);
 
   function h(tag, attrs, ...children) {
     const element = document.createElement(tag);
@@ -387,8 +408,7 @@ javascript:
         } else {
           element.className = value;
         }
-      }
-      else if (name === 'style') {
+      } else if (name === 'style') {
         Object.assign(element.style, value);
       } else if (name in element) {
         element[name] = value;
@@ -400,7 +420,7 @@ javascript:
     for (const child of children.flat()) {
       if (child && typeof child === 'object' && !Array.isArray(child)) {
         element.append(child);
-      } else if (child !== null && child !== undefined) {
+      } else if (child !== false && child !== null && child !== undefined) {
         const node = document.createTextNode(child);
         element.append(node);
       }
@@ -424,9 +444,9 @@ javascript:
   }
 
   const interval = '__BOOKMARKET_INTERVAL_ID__';
-  const updateFrequencyMinutes = window.__BOOKMARKLET_UPDATE_FREQUENCY_MINUTES__ || 1;
+  const refreshIntervalMinutes = Number(new URL(window.location).searchParams.get('refresh_interval')) || 5;
 
   clearInterval(window[interval]);
-  window[interval] = setInterval(updateMergeRequestList, updateFrequencyMinutes * 60 * 1000);
+  window[interval] = setInterval(updateMergeRequestList, refreshIntervalMinutes * 60 * 1000);
   updateMergeRequestList(true);
 })()
