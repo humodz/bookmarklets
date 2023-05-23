@@ -138,7 +138,7 @@ javascript:
     const mrsByProject = await Promise.all(
       projects.map(async p => [
         p.webUrl,
-        { project: p, mrs: await getMergeRequests(p.webUrl) }
+        { project: p, mrs: await getMergeRequestsHtml(p.webUrl) }
       ])
     );
 
@@ -158,7 +158,7 @@ javascript:
       );
     }
 
-    for (const [url, { project, mrs }] of mrsByProject) {
+    for (const [projectUrl, { project, mrs }] of mrsByProject) {
       if (mrs) {
         $$('a', mrs).forEach(anchor => anchor.target = '_blank');
 
@@ -167,27 +167,27 @@ javascript:
           h('h5', {
             class: {
               [classes.projectHeader]: true,
-              [classes.collapsed]: state.projectCollapsed[url],
+              [classes.collapsed]: state.projectCollapsed[projectUrl],
             }
           }, [
-            h('a', { target: '_blank', href: url }, project.nameWithNamespace),
+            h('a', { target: '_blank', href: projectUrl }, project.nameWithNamespace),
             h('a', {
               href: '#',
               class: classes.collapseExpand,
               onclick: (event) => {
                 event.preventDefault();
                 event.target.parentElement.classList.toggle(classes.collapsed)
-                state.projectCollapsed[url] = !state.projectCollapsed[url];
+                state.projectCollapsed[projectUrl] = !state.projectCollapsed[projectUrl];
                 persistState(state);
               },
             }, ''),
-            h('a', { target: '_blank', href: url + '/-/pipelines' }, '[Pipelines]'),
+            h('a', { target: '_blank', href: projectUrl + '/-/pipelines' }, '[Pipelines]'),
             h('label', null, [
               h('input', {
                 type: 'checkbox',
-                checked: !state.projectNotificationsDisabled[url],
+                checked: !state.projectNotificationsDisabled[projectUrl],
                 onchange: (e) => {
-                  state.projectNotificationsDisabled[url] = e.target.checked;
+                  state.projectNotificationsDisabled[projectUrl] = e.target.checked;
                   persistState(state);
                 },
               }),
@@ -209,7 +209,7 @@ javascript:
       );
     }
 
-    if (!first) {
+    if (true || !first) {
       const events = await getProjectsEvents(projects, lastUpdatedAt);
       console.log('!!!', { events });
       for (const event of events) {
@@ -236,7 +236,7 @@ javascript:
     const isMyMergeRequest = event.mergeRequest.author.id === myself.id;
 
     return (
-      !state.projectNotificationsDisabled[event.project.url] &&
+      !state.projectNotificationsDisabled[event.project.webUrl] &&
       (
         setting === NotifyFor.ALL ||
         setting === NotifyFor.ONLY_MY_MRS && isMyMergeRequest
@@ -282,7 +282,7 @@ javascript:
     localStorage.setItem('bkmk-state', JSON.stringify(state));
   }
 
-  async function getMergeRequests(url) {
+  async function getMergeRequestsHtml(url) {
     const dom = await fetchDom(url + '/-/merge_requests');
 
     if ($('.empty-state', dom)) {
@@ -303,7 +303,7 @@ javascript:
       currentUser {
         starredProjects(first: 100) {
           nodes {
-            id webUrl nameWithNamespace
+            id webUrl name nameWithNamespace
             mergeRequests(first: 100, state: opened) {
               nodes {
                 id title draft webUrl sourceBranch
@@ -355,8 +355,10 @@ javascript:
     const mrsBySourceBranch = mapMergeRequests(projects, mr => mr.sourceBranch);
     const mrsById = mapMergeRequests(projects, mr => mr.id);
 
+    console.log('!!!', { projects });
+
     const events = await Promise
-      .all(projects.map(p => getProjectEvents(p.webUrl, since)))
+      .all(projects.map(p => getProjectEvents(p, since)))
       .then(list => list.flat());
 
     events.reverse();
@@ -424,7 +426,7 @@ javascript:
     );
   }
 
-  async function getProjectEvents(projectUrl, since = new Date()) {
+  async function getProjectEvents(project, since = new Date()) {
     const date = new Date(since);
     date.setDate(date.getDate() - 1);
     const yesterday = date.toISOString().split('T')[0];
@@ -434,23 +436,13 @@ javascript:
       target: 'merge_request',
     });
 
-    const project = getProjectInfo(projectUrl);
-    const url = `/api/v4/projects/${project.path}/events?${params}`;
+    const url = `/api/v4/projects/${project.id}/events?${params}`;
 
     const events = await fetch(url).then(res => res.json());
 
     return events
       .filter(event => new Date(event.created_at) > new Date(since))
       .map(event => ({ ...event, project }));
-  }
-
-  function getProjectInfo(mrUrl) {
-    const url = mrUrl.replace(/[/]-[/].+/, '');
-    const path = new URL(url).pathname.replace('/', '');
-    const name = path.replace(/[/]/g, ' / ');
-    const shortName = path.split('/').pop();
-
-    return { url, path: encodeURIComponent(path), name, shortName };
   }
 
   function h(tag, attrs, ...children) {
