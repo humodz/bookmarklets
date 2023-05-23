@@ -93,7 +93,7 @@ javascript:
     NotificationOptions('New comments', ActionCategory.NEW_COMMENTS),
     NotificationOptions('New commits', ActionCategory.NEW_COMMITS),
     NotificationOptions('Merge and close events', ActionCategory.MERGE_AND_CLOSE),
-    NotificationOptions('Pipiline status changes', ActionCategory.PIPELINE_STATUS),
+    NotificationOptions('Pipeline status changes', ActionCategory.PIPELINE_STATUS),
   ]);
 
   const notificationSettings = h('details', {}, [
