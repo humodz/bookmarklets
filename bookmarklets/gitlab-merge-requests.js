@@ -64,21 +64,48 @@ javascript:
   let lastUpdatedAt = new Date();
   // let lastUpdatedAt = new Date() - 1000 * 60 * 60 * 24 * 5;
 
-  const notificationForm = h('details', {}, [
+  const NotifyFor = {
+    ALL: 'all',
+    ONLY_MY_MRS: 'only-my-mrs',
+    NONE: 'none'
+  };
+
+  const ActionCategory = {
+    APPROVALS: 'approvals',
+    NEW_COMMENTS: 'new-commments',
+    PIPELINE_STATUS: 'pipeline-status',
+    MERGE_AND_CLOSE: 'merge-and-close',
+    NEW_COMMITS: 'new-commits',
+  };
+
+  const Action = {
+    APPROVED: 'approved',
+    CLOSED: 'closed',
+    COMMENTED_ON: 'commented on',
+    MERGED: 'accepted',
+    OPENED: 'opened',
+    PUSHED_TO: 'pushed to',
+    REOPENED: 'reopened',
+  };
+
+  const notificationForm = h('form', null, [
+    NotificationOptions('Approvals', ActionCategory.APPROVALS),
+    NotificationOptions('New comments', ActionCategory.NEW_COMMENTS),
+    NotificationOptions('New commits', ActionCategory.NEW_COMMITS),
+    NotificationOptions('Merge and close events', ActionCategory.MERGE_AND_CLOSE),
+    NotificationOptions('Pipiline status changes', ActionCategory.PIPELINE_STATUS),
+  ]);
+
+  const notificationSettings = h('details', {}, [
     h('summary', null, h('strong', null, 'Notification settings')),
-    h('form', null, [
-      NotificationOptions('Approvals', 'approvals'),
-      NotificationOptions('New comments', 'new-comments'),
-      NotificationOptions('Pipiline status changes', 'pipeline-status-changes'),
-      NotificationOptions('Merge and close events', 'merge-and-close-events'),
-    ]),
+    notificationForm,
   ]);
 
   function NotificationOptions(label, name) {
     const options = [
-      { label: 'All', value: 'all' },
-      { label: 'Only my MRs', value: 'only-my-mrs' },
-      { label: 'None', value: 'none' },
+      { label: 'All', value: NotifyFor.ALL },
+      { label: 'Only my MRs', value: NotifyFor.ONLY_MY_MRS },
+      { label: 'None', value: NotifyFor.NONE },
     ];
 
     function update(value) {
@@ -94,7 +121,7 @@ javascript:
             type: 'radio',
             name,
             value: option.value,
-            checked: option.value === (state.notificationOptions[name] ?? 'all'),
+            checked: option.value === (state.notificationOptions[name] ?? NotifyFor.ONLY_MY_MRS),
             onchange: e => update(e.target.value),
           }),
           ' ' + option.label,
@@ -120,7 +147,7 @@ javascript:
 
     contentBody.append(
       h('br'),
-      notificationForm,
+      notificationSettings,
     );
 
     if (projects.length === 100) {
@@ -147,8 +174,9 @@ javascript:
             h('a', {
               href: '#',
               class: classes.collapseExpand,
-              onclick: (e) => {
-                e.target.parentElement.classList.toggle(classes.collapsed)
+              onclick: (event) => {
+                event.preventDefault();
+                event.target.parentElement.classList.toggle(classes.collapsed)
                 state.projectCollapsed[url] = !state.projectCollapsed[url];
                 persistState(state);
               },
@@ -183,14 +211,37 @@ javascript:
 
     if (!first) {
       const events = await getProjectsEvents(projects, lastUpdatedAt);
+      console.log('!!!', { events });
       for (const event of events) {
-        if (!state.projectNotificationsDisabled[event.project.url]) {
+        if (shouldNotify(event)) {
           notify(event);
         }
       }
     }
 
     lastUpdatedAt = new Date();
+  }
+
+  const categories = {
+    [Action.APPROVED]: ActionCategory.APPROVALS,
+    [Action.CLOSED]: ActionCategory.MERGE_AND_CLOSE,
+    [Action.COMMENTED_ON]: ActionCategory.NEW_COMMENTS,
+    [Action.MERGED]: ActionCategory.MERGE_AND_CLOSE,
+    [Action.PUSHED_TO]: ActionCategory.NEW_COMMITS,
+  };
+
+  function shouldNotify(event) {
+    const category = categories[event.action_name];
+    const setting = notificationForm.elements[category]?.value ?? NotifyFor.ALL;
+    const isMyMergeRequest = event.mergeRequest.author.id === myself.id;
+
+    return (
+      !state.projectNotificationsDisabled[event.project.url] &&
+      (
+        setting === NotifyFor.ALL ||
+        setting === NotifyFor.ONLY_MY_MRS && isMyMergeRequest
+      )
+    );
   }
 
   function notify(event) {
@@ -256,7 +307,7 @@ javascript:
             mergeRequests(first: 100, state: opened) {
               nodes {
                 id title draft webUrl sourceBranch
-
+                author { id }
                 pipelines(first: 1) {
                   nodes {
                     status
@@ -288,6 +339,10 @@ javascript:
         mergeRequests: project.mergeRequests.nodes.map(mr => ({
           ...mr,
           id: getId(mr),
+          author: {
+            ...mr.author,
+            id: getId(mr.author),
+          },
           pipelines: mr.pipelines.nodes,
         })),
       }))
@@ -295,16 +350,6 @@ javascript:
         (p1, p2) => p1.nameWithNamespace.localeCompare(p2.nameWithNamespace)
       );
   }
-
-  const Action = {
-    approved: 'approved',
-    closed: 'closed',
-    commented_on: 'commented on',
-    merged: 'accepted',
-    opened: 'opened',
-    pushed_to: 'pushed to',
-    reopened: 'reopened',
-  };
 
   async function getProjectsEvents(projects, since = new Date()) {
     const mrsBySourceBranch = mapMergeRequests(projects, mr => mr.sourceBranch);
@@ -332,13 +377,13 @@ javascript:
 
       seenEvents.add(key);
 
-      if (event.action_name === Action.reopened) {
-        seenEvents.add(getEventKey([Action.closed, event.target_id]));
+      if (event.action_name === Action.REOPENED) {
+        seenEvents.add(getEventKey([Action.CLOSED, event.target_id]));
       }
 
-      if ([Action.closed, Action.merged].includes(event.action_name)) {
+      if ([Action.CLOSED, Action.MERGED].includes(event.action_name)) {
         const actionsToIgnore = [
-          Action.approved, Action.commented_on, Action.pushed_to, Action.opened, Action.reopened
+          Action.APPROVED, Action.COMMENTED_ON, Action.PUSHED_TO, Action.OPENED, Action.REOPENED
         ];
 
         for (const action of actionsToIgnore) {
@@ -355,7 +400,7 @@ javascript:
         !isDuplicate &&
         !byMyself &&
         wantedActions.includes(event.action_name) &&
-        !(mergeRequest.draft && event.action_name === Action.pushed_to)
+        !(mergeRequest.draft && event.action_name === Action.PUSHED_TO)
       );
 
       return {
@@ -454,7 +499,7 @@ javascript:
   }
 
   const interval = '__BOOKMARKET_INTERVAL_ID__';
-  const refreshIntervalMinutes = Number(new URL(window.location).searchParams.get('refresh_interval')) || 10;
+  const refreshIntervalMinutes = Number(new URL(window.location).searchParams.get('refresh_interval')) || 3;
 
   clearInterval(window[interval]);
   window[interval] = setInterval(updateMergeRequestList, refreshIntervalMinutes * 60 * 1000);
