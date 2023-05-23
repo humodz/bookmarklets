@@ -11,12 +11,23 @@ javascript:
   const $$ = (s, e = document) => [...e.querySelectorAll(s)];
 
   const classes = {
-    collapsed: 'bookmarklet-collapsed',
-    projectHeader: 'bookmarklet-project-header',
-    collapseExpand: 'bookmarklet-collapse-expand',
+    radioButtons: 'bkmk-radio-buttons',
+    collapsed: 'bkmk-collapsed',
+    projectHeader: 'bkmk-project-header',
+    collapseExpand: 'bkmk-collapse-expand',
   }
 
-  addStyle('bookmarklet-gitlab-merge-requests', `
+  addStyle('bkmk-gitlab-merge-requests', `
+    .${classes.radioButtons} span {
+      display: inline-block;
+      width: 15rem;
+    }
+
+    .${classes.radioButtons} label {
+      display: inline-block;
+      padding-right: 4rem;
+    }
+
     .${classes.collapsed} + * {
       display: none !important;
     }
@@ -47,15 +58,53 @@ javascript:
     }
   `);
 
+  const state = getState();
   const myself = await getCurrentUser();
 
   let lastUpdatedAt = new Date();
   // let lastUpdatedAt = new Date() - 1000 * 60 * 60 * 24 * 5;
-  let oldMrInfos = [];
+
+  const notificationForm = h('details', {}, [
+    h('summary', null, h('strong', null, 'Notification settings')),
+    h('form', null, [
+      NotificationOptions('Approvals', 'approvals'),
+      NotificationOptions('New comments', 'new-comments'),
+      NotificationOptions('Pipiline status changes', 'pipeline-status-changes'),
+      NotificationOptions('Merge and close events', 'merge-and-close-events'),
+    ]),
+  ]);
+
+  function NotificationOptions(label, name) {
+    const options = [
+      { label: 'All', value: 'all' },
+      { label: 'Only my MRs', value: 'only-my-mrs' },
+      { label: 'None', value: 'none' },
+    ];
+
+    function update(value) {
+      state.notificationOptions[name] = value;
+      persistState(state);
+    }
+
+    return h('fieldset', { class: classes.radioButtons }, [
+      h('span', null, h('strong', null, label)),
+      ...options.map(option => (
+        h('label', null, [
+          h('input', {
+            type: 'radio',
+            name,
+            value: option.value,
+            checked: option.value === (state.notificationOptions[name] ?? 'all'),
+            onchange: e => update(e.target.value),
+          }),
+          ' ' + option.label,
+        ])
+      ))
+    ]);
+  }
 
   async function updateMergeRequestList(first = false) {
     console.log('Updating merge requests...', new Date().toTimeString());
-    const state = getState();
 
     const projects = await getStarredProjects();
 
@@ -66,8 +115,13 @@ javascript:
       ])
     );
 
-    $('#content-body').innerHTML = '';
     const contentBody = $('#content-body');
+    contentBody.innerHTML = '';
+
+    contentBody.append(
+      h('br'),
+      notificationForm,
+    );
 
     if (projects.length === 100) {
       contentBody.append(
@@ -117,9 +171,9 @@ javascript:
       }
     }
 
-    const newMrInfos = getMergeRequestInfos();
+    const allMrs = mrsByProject.map(it => it[1].mrs).flat();
 
-    if (newMrInfos.length === 0) {
+    if (allMrs.length === 0) {
       contentBody.append(
         h('h3', { style: { textAlign: 'center', marginTop: '3rem' } },
           'There are no open Merge Requests in your starred projects.'
@@ -129,8 +183,6 @@ javascript:
 
     if (!first) {
       const events = await getProjectsEvents(projects, lastUpdatedAt);
-      console.log(events);
-
       for (const event of events) {
         if (!state.projectNotificationsDisabled[event.project.url]) {
           notify(event);
@@ -138,7 +190,6 @@ javascript:
       }
     }
 
-    oldMrInfos = newMrInfos;
     lastUpdatedAt = new Date();
   }
 
@@ -165,9 +216,10 @@ javascript:
     let savedState = {};
 
     try {
-      savedState = JSON.parse(localStorage.getItem('bookmarklet-merge-requests-state'));
+      savedState = JSON.parse(localStorage.getItem('bkmk-state'));
     } finally {
       return {
+        notificationOptions: {},
         projectNotificationsDisabled: {},
         projectCollapsed: {},
         ...savedState,
@@ -176,7 +228,7 @@ javascript:
   }
 
   function persistState(state) {
-    localStorage.setItem('bookmarklet-merge-requests-state', JSON.stringify(state));
+    localStorage.setItem('bkmk-state', JSON.stringify(state));
   }
 
   async function getMergeRequests(url) {
@@ -204,7 +256,13 @@ javascript:
             mergeRequests(first: 100, state: opened) {
               nodes {
                 id title draft webUrl sourceBranch
-              }}}}}
+
+                pipelines(first: 1) {
+                  nodes {
+                    status
+                    user {
+                      name avatarUrl
+                    }}}}}}}}
     }
     `.replace(/\s+/g, ' ');
 
@@ -230,6 +288,7 @@ javascript:
         mergeRequests: project.mergeRequests.nodes.map(mr => ({
           ...mr,
           id: getId(mr),
+          pipelines: mr.pipelines.nodes,
         })),
       }))
       .sort(
@@ -248,12 +307,8 @@ javascript:
   };
 
   async function getProjectsEvents(projects, since = new Date()) {
-    console.log({projects});
-
     const mrsBySourceBranch = mapMergeRequests(projects, mr => mr.sourceBranch);
     const mrsById = mapMergeRequests(projects, mr => mr.id);
-
-    console.log({mrsBySourceBranch, mrsById});
 
     const events = await Promise
       .all(projects.map(p => getProjectEvents(p.webUrl, since)))
@@ -344,51 +399,6 @@ javascript:
       .map(event => ({ ...event, project }));
   }
 
-  window.BKM_getProjectEvents = getProjectEvents;
-
-  function getUserAvatar(userId, size = 64) {
-    return `https://gitlab.com/uploads/-/system/user/avatar/${userId}/avatar.png?width=${size}`;
-  }
-
-  function getMergeRequestInfos() {
-    const pipelineStatuses = [
-      { value: 'pending', selector: '.ci-status-icon-pending' },
-      { value: 'passed', selector: '.ci-status-icon-success' },
-      { value: 'running', selector: '.ci-status-icon-running' },
-      { value: 'failed', selector: '.ci-status-icon-failed' },
-      { value: 'canceled', selector: '.ci-status-icon-canceled' },
-    ];
-
-    return $$('#content-body .merge-request')
-      .map(element => {
-        const titleElem = $('.title a', element);
-        const authorElem = $('.issuable-info .author-link', element);
-        const assigneeElem = $('.issuable-meta .author-link[title^="Assigned to"]', element);
-
-        const title = titleElem.textContent.trim();
-
-        return {
-          title,
-          href: titleElem.href,
-          approved: null !== $('[data-testid=approval-solid-icon]', element),
-          isDraft: title.startsWith('Draft:'),
-          mergeConflict: null !== $('[data-testid=warning-solid-icon]', element),
-          lastUpdated: $('.merge_request_updated_ago', element).getAttribute('datetime'),
-          pipelineStatus: pipelineStatuses.find(it => !!$(it.selector, element))?.value || 'none',
-          comments: parseInt($('[data-testid=issuable-comments]', element).textContent.trim()),
-          project: getProjectInfo(titleElem.href),
-          author: {
-            name: authorElem.getAttribute('data-name'),
-            username: authorElem.getAttribute('data-username'),
-            avatar: getUserAvatar(authorElem.getAttribute('data-user-id')),
-          },
-          assignee: !assigneeElem ? null : {
-            username: new URL(assigneeElem.href).pathname.replace('/', '')
-          },
-        };
-      });
-  }
-
   function getProjectInfo(mrUrl) {
     const url = mrUrl.replace(/[/]-[/].+/, '');
     const path = new URL(url).pathname.replace('/', '');
@@ -444,7 +454,7 @@ javascript:
   }
 
   const interval = '__BOOKMARKET_INTERVAL_ID__';
-  const refreshIntervalMinutes = Number(new URL(window.location).searchParams.get('refresh_interval')) || 5;
+  const refreshIntervalMinutes = Number(new URL(window.location).searchParams.get('refresh_interval')) || 10;
 
   clearInterval(window[interval]);
   window[interval] = setInterval(updateMergeRequestList, refreshIntervalMinutes * 60 * 1000);
