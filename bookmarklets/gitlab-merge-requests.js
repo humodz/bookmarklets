@@ -60,6 +60,7 @@ javascript:
 
   const state = getState();
   const myself = await getCurrentUser();
+  myself.id = 0;
 
   let lastUpdatedAt = new Date();
   // let lastUpdatedAt = new Date() - 1000 * 60 * 60 * 24 * 5;
@@ -129,6 +130,8 @@ javascript:
       ))
     ]);
   }
+
+  let oldMrInfo;
 
   async function updateMergeRequestList(first = false) {
     console.log('Updating merge requests...', new Date().toTimeString());
@@ -209,7 +212,9 @@ javascript:
       );
     }
 
-    if (true || !first) {
+    const newMrInfo = getMergeRequestInformation(projects);
+
+    if (!first) {
       const events = await getProjectsEvents(projects, lastUpdatedAt);
       console.log('!!!', { events });
       for (const event of events) {
@@ -217,9 +222,59 @@ javascript:
           notify(event);
         }
       }
+
+      const diffEvents = diffMergeRequestInfo(oldMrInfo, newMrInfo);
+      console.log('!!!', { diffEvents });
     }
 
+    oldMrInfo = newMrInfo;
     lastUpdatedAt = new Date();
+  }
+
+  function getMergeRequestInformation(projects) {
+    return projects
+      .map(
+        project => ({
+          ...project.mergeRequest,
+          project,
+        })
+      ).flat();
+  }
+
+  function diffMergeRequestInfo(oldMrInfo, currentMrInfo) {
+    const mrs = currentMrInfo
+      .map(mr => ({
+        current: mr,
+        old: oldMrInfo.find(oldMr => oldMr.id === mr.id)
+      }))
+      .filter(item => item.old);
+
+    let events = [];
+
+    for (const { current, old } of mrs) {
+      const newEvent = (actionName, author, extras = {}) => ({
+        action_name: actionName,
+        mergeRequest: current,
+        project: current.project,
+        author: {
+          ...author,
+          avatar_url: author.avatarUrl,
+        },
+        ...extras,
+      });
+
+      if (!current.draft && old.draft && current.author.id !== myself.id) {
+        events.push(newEvent('marked as ready', current.author));
+      }
+
+      const newCi = current.lastPipeline;
+
+      if (newCi && newCi.status !== old.lastPipeline?.status) {
+        events.push(newEvent(newCi.status, newCi.user, { isCi: true }));
+      }
+    }
+
+    return events;
   }
 
   const categories = {
@@ -251,7 +306,7 @@ javascript:
       icon: event.author.avatar_url,
       body: [
         event.mergeRequest?.title ?? 'Unknown Merge Request',
-        `in ${event.project.shortName}`,
+        `in ${event.project.name}`,
       ].join('\n'),
     });
 
@@ -307,13 +362,12 @@ javascript:
             mergeRequests(first: 100, state: opened) {
               nodes {
                 id title draft webUrl sourceBranch
-                author { id }
+                author { id name avatarUrl }
                 pipelines(first: 1) {
                   nodes {
                     status
-                    user {
-                      name avatarUrl
-                    }}}}}}}}
+                    user { id name avatarUrl }
+                  }}}}}}}
     }
     `.replace(/\s+/g, ' ');
 
@@ -343,7 +397,7 @@ javascript:
             ...mr.author,
             id: getId(mr.author),
           },
-          pipelines: mr.pipelines.nodes,
+          lastPipeline: mr.pipelines.nodes[0] ?? null,
         })),
       }))
       .sort(
