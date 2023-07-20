@@ -60,7 +60,6 @@ javascript:
 
   const state = getState();
   const myself = await getCurrentUser();
-  myself.id = 0;
 
   let lastUpdatedAt = new Date();
   // let lastUpdatedAt = new Date() - 1000 * 60 * 60 * 24 * 5;
@@ -190,7 +189,7 @@ javascript:
                 type: 'checkbox',
                 checked: !state.projectNotificationsDisabled[projectUrl],
                 onchange: (e) => {
-                  state.projectNotificationsDisabled[projectUrl] = e.target.checked;
+                  state.projectNotificationsDisabled[projectUrl] = !e.target.checked;
                   persistState(state);
                 },
               }),
