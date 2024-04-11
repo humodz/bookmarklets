@@ -339,7 +339,7 @@ javascript:
   async function getMergeRequestsHtml(url) {
     const dom = await fetchDom(url + '/-/merge_requests');
 
-    if ($('.empty-state', dom)) {
+    if ($('.gl-empty-state', dom)) {
       return null;
     }
 
